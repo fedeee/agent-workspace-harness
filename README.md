@@ -1,8 +1,6 @@
 # Agentic Workspace with Anti-Regression Harness
 
-This is an agent **harness**, not an autonomous agent. Copy these files into your
-product repository. Coding agents then keep a record of past failures.
-They also measure pipeline changes against a frozen gold set.
+This is a layered workspace harness combining Negative ADRs, Spec-first workflows and Offline empirical eval loops.
 
 ## The problem
 
@@ -12,9 +10,6 @@ and extra configuration dials.
 
 Prompt rules are not memory. A new chat session repeats last week's
 failure unless that failure is on disk.
-
-A vibe check is not evaluation. A prompt change can fix one edge case.
-It can also raise recall error on the rest of the gold set.
 
 ## The solution
 
@@ -40,9 +35,6 @@ This harness adds three durable layers to your repository:
   Map specs first          Skip recorded       Score the hypothesis
                            dead ends           on a frozen gold set
 ```
-
-Copy this harness into an existing app, or add product code here.
-Do not wrap other remotes in a `repos/` folder.
 
 ## How to use the three layers
 
