@@ -143,11 +143,6 @@ This design keeps bash small. Most rules live in markdown and skills.
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `.claude/skills/mount-production-db/` | Docker Postgres sidecar: fetch the S3 dump, create `eval_ro`, tear down. Keep the Cursor mirror in `.cursor/skills/` identical. |
 
-Use `git worktree` for parallel agent experiments. Do not change files
-in the main checkout.
-
-Use `psql` with the sidecar `DATABASE_URL` to export gold candidates.
-
 ## MCP servers
 
 Shared configuration in `.mcp.json`, `.cursor/mcp.json`, and
