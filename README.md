@@ -36,6 +36,10 @@ This harness adds three durable layers to your repository:
                            dead ends           on a frozen gold set
 ```
 
+## Who's this for
+
+The Agent Workspace Harness is built specifically for software engineers, data scientists, and technical founders who use AI coding agents (like Claude or Cursor) to build, refactor, or maintain data-intensive systems, search pipelines, and classification logic.
+
 ## How to use the three layers
 
 ### 1. Plan then implement
@@ -64,75 +68,37 @@ A new chat session reads that file first. It then skips those dead ends.
 
 ### 3. Offline eval
 
-Do not keep a pipeline change after a vibe check.
-Score the change on a frozen gold set.
+Score one hypothesis on a frozen gold set.
+Do not implement the change until a cycle keeps it.
 
-There is no separate test-hypothesis skill. `/eval-loop` is that skill.
-It runs one observe → hypothesize → test → keep or kill cycle.
+Do this setup once:
 
-#### Write the eval rules
+1. Write the class rules in [`_eval/GOLD.md`](_eval/GOLD.md).
+2. Label at least **20** rows in [`_eval/GOLD.csv`](_eval/GOLD.csv).
+   Set `gold` to `in_class` or `out_class`. Do not count `unsure` rows.
+   Label one qualified row and one excluded row.
+3. Copy `_local/eval.env.example` to `_local/eval.env`. Fill the dump
+   fields.
+4. Run `/mount-production-db`.
 
-Put the rules in [`_eval/GOLD.md`](_eval/GOLD.md) before the first cycle.
+For each idea:
 
-1. Write the target class in one sentence.
-2. Write the qualified-row predicate. That is the model's "hit".
-3. Label at least **20** rows in [`_eval/GOLD.csv`](_eval/GOLD.csv).
-   Set `gold` to `in_class` or `out_class`. `unsure` does not count.
-   You also need one labelled qualified row and one labelled excluded row.
+```
+/create-plan  →  _eval/BACKLOG.md  →  /eval-loop H1  →  /implement-plan
+```
 
-A header-only `GOLD.csv` is not valid for `/eval-loop`.
+1. Run `/create-plan` with the change you want to measure.
+2. Add one open item to [`_eval/BACKLOG.md`](_eval/BACKLOG.md).
+   Write one sentence. Name one predicted metric. Use the next free id
+   (`H1`, `H2`, …).
+3. Run `/eval-loop H1`.
+4. If the verdict is keep, run `/implement-plan`.
+
+Keep a change only if precision error drops and recall error does not
+rise.
+
 Do not score `GOLD.example.csv`.
-
-#### Write a hypothesis
-
-Put each idea in [`_eval/BACKLOG.md`](_eval/BACKLOG.md).
-
-1. Use the next free id (`H1`, `H2`, …).
-2. Write one sentence. Name one predicted metric.
-3. Set status to `open`.
-
-`/eval-loop` can also add a new item when it hypothesizes.
-
-#### Run it
-
-Mount the dump first. Then tell the agent the hypothesis id:
-
-```
-/eval-loop H1
-```
-
-That scores `H1` on the frozen gold set for one cycle.
-
-Other forms:
-
-| Command               | Action                                     |
-| --------------------- | ------------------------------------------ |
-| `/eval-loop`          | Pick an open item, or write a new one.     |
-| `/eval-loop H1`       | Test hypothesis `H1` this cycle.           |
-| `/eval-loop observe`  | Refresh the baseline. Write no hypothesis. |
-| `/eval-loop continue` | One more cycle after the last one.         |
-
-1. Copy `_local/eval.env.example` to `_local/eval.env`. Fill the dump fields.
-2. Run `/mount-production-db`. That restores the dump into a sidecar Postgres.
-   The read-only user is `eval_ro`.
-3. Run `/eval-loop H1` (or the id you wrote in the backlog).
-
-Keep a change only if precision error drops and recall error does not rise.
-Work on one hypothesis per cycle.
-
-These rates are classification error rates. They are not data leakage
-(train/test contamination).
-
-| Name in this repo                      | Standard term                         | Formula                                       |
-| -------------------------------------- | ------------------------------------- | --------------------------------------------- |
-| Precision error (also: precision leak) | False positive rate on qualified rows | `out_class` on qualified / labelled_qualified |
-| Recall error (also: recall leak)       | False negative rate on excluded rows  | `in_class` on excluded / labelled_excluded    |
-
-- Qualified row + `out_class` = false positive (model hit; gold says no).
-- Excluded row + `in_class` = false negative (gold says yes; the model missed it).
-- `labelled_*` ignores `unsure`.
-
-See [\_eval/README.md](_eval/README.md) for the full protocol.
+See [`_eval/README.md`](_eval/README.md) for metrics and other commands.
 
 ## Workspace layout
 
