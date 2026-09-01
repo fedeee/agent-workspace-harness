@@ -6,7 +6,18 @@ the live file.
 One change. One metric. The loop does not implement these until a cycle
 picks one.
 
+Write one open item per idea. One sentence. One predicted metric.
+Use the next free id (`H1`, `H2`, …).
+
 Status: `open` | `in-cycle` | `keep` | `kill`.
+
+Test an item with `/eval-loop H1`. Example:
+
+```
+/eval-loop H1
+```
+
+Or run `/eval-loop` and let the agent pick one open item.
 
 Kill on sight (do not add):
 

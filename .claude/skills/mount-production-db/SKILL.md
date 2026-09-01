@@ -1,27 +1,27 @@
 ---
-name: mount-s3-db
+name: mount-production-db
 description: >-
-  Downloads a Postgres dump from S3, mounts it in a throwaway local
-  Postgres (separate port + volume, never touches the live local DB), then
-  runs read-only SQL against it. Use when the user gives an s3:// dump
-  location, says mount S3 DB, sidecar DB, eval against a prod dump, or wants
-  to query a remote dump without overwriting local data.
+  Restore a production Postgres dump into a throwaway local sidecar
+  (separate port + volume, never touches the live local DB), then run
+  read-only SQL against it. Current fetch path is S3. Use when the user
+  says mount production DB, mount S3 DB, sidecar DB, eval against a prod
+  dump, or pastes an s3:// dump URI.
 user-invocable: true
 ---
 
-# Mount S3 DB (read-only sidecar)
+# Mount production DB (read-only sidecar)
 
-Temporarily restore a `pg_dump` from S3 into a **sidecar** Postgres.
-Run the user's eval / question. Tear down. Never touch the default local
-volume or live local ports.
+Temporarily restore a production `pg_dump` into a **sidecar** Postgres.
+The current fetch path is S3. Run the user's eval / question. Tear down.
+Never touch the default local volume or live local ports.
 
 ## Arguments
 
-- `/mount-s3-db` — mount `latest`
-- `/mount-s3-db latest`
-- `/mount-s3-db 20260729T120000Z` — timestamp key under `db/<ts>/`
-- `/mount-s3-db s3://YOUR_BACKUP_BUCKET/db/latest/app.dump`
-- `/mount-s3-db latest — count labelled rows by slice`
+- `/mount-production-db` — mount `latest`
+- `/mount-production-db latest`
+- `/mount-production-db 20260729T120000Z` — timestamp key under `db/<ts>/`
+- `/mount-production-db s3://YOUR_BACKUP_BUCKET/db/latest/app.dump`
+- `/mount-production-db latest — count labelled rows by slice`
 
 If the user pastes an `s3://…` dump URI or asks to eval against a dump,
 run this workflow even without the slash command.
@@ -55,7 +55,7 @@ The mount script creates role `eval_ro` and exports that URL — prefer it.
 
 ### Postgres MCP
 
-The `postgres` MCP server runs `.claude/skills/mount-s3-db/scripts/postgres-mcp.sh`.
+The `postgres` MCP server runs `.claude/skills/mount-production-db/scripts/postgres-mcp.sh`.
 That script reads `/tmp/eval-sidecar-mcp.env` (written by `mount.sh`).
 It starts `crystaldba/postgres-mcp` in `--access-mode=restricted`.
 It never uses ports `5432` or `5433`.
@@ -68,7 +68,7 @@ After step 2:
 1. Validate the pointer, safe port, Docker, and sidecar connection:
 
    ```bash
-   bash .claude/skills/mount-s3-db/scripts/postgres-mcp.sh --check
+   bash .claude/skills/mount-production-db/scripts/postgres-mcp.sh --check
    ```
 
 2. Reconnect the `postgres` MCP server. You do not need to restart the IDE.
@@ -87,7 +87,7 @@ The pointer file contains `EVAL_SIDECAR_URL` with host `host.docker.internal`
 Copy and track:
 
 ```
-Mount S3 DB progress:
+Mount production DB progress:
 - [ ] 1. Resolve S3 URI
 - [ ] 2. Mount sidecar (script)
 - [ ] 3. Run user eval / question with DATABASE_URL
@@ -114,15 +114,15 @@ Accept full `s3://…` URIs as-is. Do not hardcode a bucket name in the skill.
 From workspace root:
 
 ```bash
-bash .claude/skills/mount-s3-db/scripts/mount.sh latest
+bash .claude/skills/mount-production-db/scripts/mount.sh latest
 # or:
-bash .claude/skills/mount-s3-db/scripts/mount.sh s3://YOUR_BACKUP_BUCKET/db/latest/app.dump
+bash .claude/skills/mount-production-db/scripts/mount.sh s3://YOUR_BACKUP_BUCKET/db/latest/app.dump
 ```
 
 Cursor mirror (identical):
 
 ```bash
-bash .cursor/skills/mount-s3-db/scripts/mount.sh latest
+bash .cursor/skills/mount-production-db/scripts/mount.sh latest
 ```
 
 The script:
@@ -162,9 +162,9 @@ secrets from the DB.
 ### 5. Teardown
 
 ```bash
-bash .claude/skills/mount-s3-db/scripts/teardown.sh "$SESSION_ID"
+bash .claude/skills/mount-production-db/scripts/teardown.sh "$SESSION_ID"
 # or:
-bash .claude/skills/mount-s3-db/scripts/teardown.sh /tmp/eval-sidecar-<id>/state.env
+bash .claude/skills/mount-production-db/scripts/teardown.sh /tmp/eval-sidecar-<id>/state.env
 ```
 
 Removes compose project, volume, and `/tmp/eval-sidecar-<id>/`.
@@ -174,7 +174,7 @@ If the agent dies mid-flight, recover with:
 ```bash
 docker ps -a --filter name=eval-sidecar-
 ls /tmp/eval-sidecar-* 2>/dev/null
-bash .claude/skills/mount-s3-db/scripts/teardown.sh <session_id>
+bash .claude/skills/mount-production-db/scripts/teardown.sh <session_id>
 ```
 
 ## Examples
@@ -182,12 +182,12 @@ bash .claude/skills/mount-s3-db/scripts/teardown.sh <session_id>
 **Ad-hoc SQL**
 
 ```
-/mount-s3-db s3://YOUR_BACKUP_BUCKET/db/latest/app.dump — count labelled rows by slice
+/mount-production-db s3://YOUR_BACKUP_BUCKET/db/latest/app.dump — count labelled rows by slice
 ```
 
 **Latest dump, then eval-loop**
 
 ```
-/mount-s3-db latest
+/mount-production-db latest
 /eval-loop observe
 ```

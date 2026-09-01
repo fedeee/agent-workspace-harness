@@ -21,27 +21,64 @@ ship a schema.
 | `_eval/README.md` | tracked | This protocol |
 | `_eval/CYCLE.md` | tracked | Empty cycle template |
 | `_eval/EXAMPLE.cycle.md` | tracked | One filled cycle (fake data) |
-| `_eval/GOLD.example.csv` | tracked | Gold-row shape with fake domains |
+| `_eval/GOLD.example.csv` | tracked | Gold-row shape with fake ids |
 | `_eval/GOLD.example.md` | tracked | Gold protocol shape |
 | `_eval/BACKLOG.example.md` | tracked | Hypothesis backlog shape |
 | `_eval/NNN-<slug>.md` | tracked | Cycle verdict |
-| `_eval/GOLD.md` | tracked | Gold protocol for this workspace |
+| `_eval/GOLD.md` | tracked | Class rules for this workspace |
 | `_eval/GOLD.csv` | tracked | Frozen list + labels |
 | `_eval/BACKLOG.md` | tracked | Hypotheses not yet tested |
 | `_scratch/eval-loop/*.csv` | ignored | Raw eval output |
 
+## Eval rules
+
+Write the rules in `GOLD.md` before the first cycle.
+
+1. **Target class.** One sentence. What does `in_class` mean here?
+2. **Qualified-row predicate.** One dump check. What does the model
+   treat as a hit? Recompute it from the fact table each cycle.
+3. **Gold labels.** In `GOLD.csv`, set `gold` to `in_class`,
+   `out_class`, or `unsure`.
+
+There is no skill that writes these rules. You write `GOLD.md`.
+`/eval-loop` then scores against them.
+
+## Hypotheses
+
+Write each idea in `BACKLOG.md`. One sentence. One predicted metric.
+Give it the next free id (`H1`, `H2`, …). Set status to `open`.
+
+The skill that tests a hypothesis is `/eval-loop`. Pass the id:
+
+```
+/eval-loop H1
+```
+
+That runs one cycle against `H1` in `BACKLOG.md`.
+
+| Command | Action |
+|---------|--------|
+| `/eval-loop` | One cycle. Pick an open item, or write a new one. |
+| `/eval-loop H1` | Test hypothesis `H1` this cycle. |
+| `/eval-loop observe` | Refresh the baseline. Write no hypothesis. |
+| `/eval-loop continue` | One more cycle after the last one. |
+
+Do not implement the change until a cycle keeps it.
+
 ## How to run a cycle
 
-1. Confirm `/mount-s3-db` is up. Postgres MCP user is `eval_ro`.
-2. Read this folder's latest `NNN-*.md`, or `EXAMPLE.cycle.md` on the first run.
-3. Follow `.claude/skills/eval-loop/SKILL.md` (Cursor mirror is identical).
-4. Copy `CYCLE.md` to the next `NNN-<slug>.md` and fill it.
-5. Stop after one cycle unless the user says continue.
+1. Confirm `/mount-production-db` is up. Postgres MCP user is `eval_ro`.
+2. Tell the agent `/eval-loop H1` (or the id you want to test).
+3. Read this folder's latest `NNN-*.md`, or `EXAMPLE.cycle.md` on the first run.
+4. Follow `.claude/skills/eval-loop/SKILL.md` (Cursor mirror is identical).
+5. Copy `CYCLE.md` to the next `NNN-<slug>.md` and fill it.
+6. Stop after one cycle unless the user says continue.
 
 ## Qualified row
 
-Define one predicate on your dump. Write it in the cycle file. Recompute
-from the fact table. Do not trust a cached counts column.
+Define one predicate on your dump. Write it in `GOLD.md` and in the
+cycle file. Recompute from the fact table. Do not trust a cached
+counts column.
 
 ## Gold metrics
 
@@ -50,15 +87,14 @@ These are classification error rates. They are not data leakage
 
 | Name in this repo | Standard term | Formula |
 |---|---|---|
-| Precision error (also: precision leak) | False positive rate on qualified rows | false_icp / labelled_qualified |
-| Recall error (also: recall leak) | False negative rate on excluded rows | true_icp / labelled_excluded |
+| Precision error (also: precision leak) | False positive rate on qualified rows | out_class on qualified / labelled_qualified |
+| Recall error (also: recall leak) | False negative rate on excluded rows | in_class on excluded / labelled_excluded |
 
-`true_icp` means "in the target class". `false_icp` means "not in the
-target class". Rename the labels if your domain uses other words. Keep
-the two error rates.
+`in_class` means "in the target class". `out_class` means "not in the
+target class". Keep these two gold values. Keep the two error rates.
 
-- Qualified row + `false_icp` = false positive.
-- Excluded row + `true_icp` = false negative (a miss).
+- Qualified row + `out_class` = false positive.
+- Excluded row + `in_class` = false negative (a miss).
 - `labelled_*` ignores `unsure`.
 
 Keep a change if precision error drops and recall error does not rise.
@@ -66,7 +102,7 @@ Keep a change if precision error drops and recall error does not rise.
 ## Minimum gold set
 
 Do not run `/eval-loop` until `_eval/GOLD.csv` has at least **20**
-rows with `gold` set to `true_icp` or `false_icp`. `unsure` does not
+rows with `gold` set to `in_class` or `out_class`. `unsure` does not
 count. You also need at least one labelled qualified row and one
 labelled excluded row so both rates have a denominator.
 

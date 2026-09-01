@@ -104,7 +104,9 @@ Dated `*.plan.md` files live in this git tree. Git also tracks
 The living eval ledger is **`_eval/`**, not this folder.
 
 `_plans/` holds dated implementation plans and `DECISIONS.md`.
-`_eval/` holds gold labels, cycle verdicts, and the hypothesis backlog.
+`_eval/` holds gold rules, cycle verdicts, and the hypothesis backlog.
+Write class rules in `_eval/GOLD.md`. Write hypotheses in `_eval/BACKLOG.md`.
+Test one item with `/eval-loop` or `/eval-loop H1`.
 See [_eval/README.md](../_eval/README.md).
 Raw eval CSVs stay in `_scratch/eval-loop/` (gitignored).
 

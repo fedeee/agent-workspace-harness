@@ -13,7 +13,7 @@ _scratch/
 .playwright-mcp/
 /*.png
 
-# Machine secrets for /mount-s3-db
+# Machine secrets for /mount-production-db
 _local/eval.env
 _local/*.env
 !_local/*.env.example

@@ -44,9 +44,9 @@ renumber.
 ### D2 — Hardcoded keyword lists in engine source
 - **Status**: settled (example)
 - **Was**: A vertical word list (or regex) compiled into the classifier.
-- **Why**: The list overfit one campaign and leaked precision on the next.
-- **Do not** put industry names, product categories, or brand lists in engine code.
-  Those facts belong in campaign settings.
+- **Why**: The list overfit one slice and leaked precision on the next.
+- **Do not** put class names, category lists, or brand lists in engine code.
+  Those facts belong in per-run settings.
 
 ## Eval
 

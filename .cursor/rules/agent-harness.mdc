@@ -21,7 +21,7 @@ Harness skills:
 
 - `/create-plan` / `/implement-plan` — spec-first execution
 - `/eval-loop` — one observe → hypothesize → test → keep/kill cycle
-- `/mount-s3-db` — S3 dump → throwaway sidecar Postgres
+- `/mount-production-db` — production dump → throwaway sidecar Postgres
 - `/commit` — stage and commit this repo. Never push.
 - `/update-all-md-docs` — refresh markdown so links stay accurate
 
@@ -30,10 +30,10 @@ Harness skills:
 - Never `git push`. Never open SSH. The user pushes.
 - Git ignores `_local/eval.env` (sidecar secrets). See `README.md`.
 - Ignore Postgres MCP connection failures unless the user asked for
-  `/eval-loop`, `/mount-s3-db`, or sidecar SQL. Do not edit `.mcp.json`
+  `/eval-loop`, `/mount-production-db`, or sidecar SQL. Do not edit `.mcp.json`
   to hide that error.
 - Do not run `/eval-loop` until `_eval/GOLD.csv` has at least 20
-  labelled rows (`true_icp` or `false_icp`).
+  labelled rows (`in_class` or `out_class`).
 
 # Coding Standards
 

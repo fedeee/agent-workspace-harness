@@ -128,15 +128,15 @@ fi
 
 mkdir -p "$STATE_DIR"
 
-echo "[mount-s3-db] session=$SESSION_ID" >&2
-echo "[mount-s3-db] downloading $S3_URI → $DUMP_PATH" >&2
+echo "[mount-production-db] session=$SESSION_ID" >&2
+echo "[mount-production-db] downloading $S3_URI → $DUMP_PATH" >&2
 if [[ -n "$PROFILE" ]]; then
   AWS_PROFILE="$PROFILE" aws s3 cp "$S3_URI" "$DUMP_PATH" --region "$REGION" >&2
 else
   aws s3 cp "$S3_URI" "$DUMP_PATH" --region "$REGION" >&2
 fi
 
-echo "[mount-s3-db] starting sidecar Postgres on localhost:${DB_PORT} (project $COMPOSE_PROJECT)" >&2
+echo "[mount-production-db] starting sidecar Postgres on localhost:${DB_PORT} (project $COMPOSE_PROJECT)" >&2
 COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   DB_PORT="$DB_PORT" \
   EVAL_DB_USER="$DB_USER" \
@@ -144,7 +144,7 @@ COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   EVAL_DB_NAME="$DB_NAME" \
   docker compose -f "$COMPOSE_FILE" up -d db >&2
 
-echo "[mount-s3-db] waiting for healthy..." >&2
+echo "[mount-production-db] waiting for healthy..." >&2
 for _ in $(seq 1 60); do
   if COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
       DB_PORT="$DB_PORT" \
@@ -176,7 +176,7 @@ if ! COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   exit 1
 fi
 
-echo "[mount-s3-db] restoring dump (clean into sidecar only)..." >&2
+echo "[mount-production-db] restoring dump (clean into sidecar only)..." >&2
 set +e
 COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   DB_PORT="$DB_PORT" \
@@ -200,7 +200,7 @@ if [[ "$RESTORE_RC" -gt 1 ]]; then
   exit 1
 fi
 
-echo "[mount-s3-db] creating read-only role ${RO_USER}..." >&2
+echo "[mount-production-db] creating read-only role ${RO_USER}..." >&2
 COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   DB_PORT="$DB_PORT" \
   EVAL_DB_USER="$DB_USER" \
@@ -249,8 +249,8 @@ COMPOSE_FILE=${COMPOSE_FILE}
 CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 
-echo "[mount-s3-db] ready. Prefer DATABASE_URL (eval_ro). Teardown: bash $SCRIPT_DIR/teardown.sh ${SESSION_ID}" >&2
-echo "[mount-s3-db] postgres MCP check: bash $SCRIPT_DIR/postgres-mcp.sh --check" >&2
-echo "[mount-s3-db] reconnect only the postgres MCP server after the check passes" >&2
+echo "[mount-production-db] ready. Prefer DATABASE_URL (eval_ro). Teardown: bash $SCRIPT_DIR/teardown.sh ${SESSION_ID}" >&2
+echo "[mount-production-db] postgres MCP check: bash $SCRIPT_DIR/postgres-mcp.sh --check" >&2
+echo "[mount-production-db] reconnect only the postgres MCP server after the check passes" >&2
 echo ""
 cat "$STATE_FILE"

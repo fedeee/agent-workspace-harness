@@ -6,9 +6,6 @@ rules, living plans, domain memory, measurement loops, and product code.
 The purpose is a harness that remembers what already failed. It is not
 a clone manager for other remotes. Do not add a `repos/` layer.
 
-Humans start at [ONBOARDING.md](./ONBOARDING.md). Agents follow this
-file.
-
 ## This Workspace
 
 One git repository. Put product code in this tree, or copy these harness
@@ -27,7 +24,7 @@ stay local. Report them as ready to push.
 - `/create-plan` — create a plan with steps, context, and pseudocode
 - `/implement-plan` — execute the plan, check off steps, run tests
 - `/eval-loop` — one observe → hypothesize → test → keep/kill cycle
-- `/mount-s3-db` — restore a dump onto a throwaway sidecar Postgres
+- `/mount-production-db` — restore a dump onto a throwaway sidecar Postgres
 
 **`_plans/DECISIONS.md` is the ledger of directions already tried and
 invalidated.** Read it before proposing an architecture change. Cite the
@@ -42,20 +39,21 @@ Git ignores `_local/eval.env` only (sidecar secrets).
 
 Score `_eval/GOLD.csv` when it exists. Do not score `GOLD.example.csv`.
 Do not run `/eval-loop` until that file has at least 20 labelled rows
-(`true_icp` or `false_icp`). `unsure` does not count.
+(`in_class` or `out_class`). `unsure` does not count.
 
 See `_plans/README.md` and `_eval/README.md`.
 
 ### Postgres MCP — expected failure
 
-The Postgres MCP server fails until `/mount-s3-db` writes a pointer
+The Postgres MCP server fails until `/mount-production-db` writes a pointer
 file. Ignore that connection error. Do not retry it. Do not edit
 `.mcp.json` to hide it.
 
 Use Postgres MCP only when the user asked for `/eval-loop`,
-`/mount-s3-db`, or read-only SQL against the sidecar.
+`/mount-production-db`, or read-only SQL against the sidecar.
 
 ## Writing Style
+
 @.claude/prompt-snippets/simplified-technical-english.md
 [Simplified Technical English](./.claude/prompt-snippets/simplified-technical-english.md)
 
@@ -63,10 +61,12 @@ All docs, READMEs, task files, plans, commit messages, and responses use
 **ASD-STE100 Simplified Technical English**.
 
 ## Coding Standards
+
 @.claude/prompt-snippets/coding-standards.md
 [Coding Standards](./.claude/prompt-snippets/coding-standards.md)
 
 ## Commit Message Style
+
 @.claude/prompt-snippets/commit-message.md
 [Commit Message Guidelines](./.claude/prompt-snippets/commit-message.md)
 
@@ -79,12 +79,12 @@ two agentic features. If an instruction is only used once, inline it.
 
 Keep Claude Code, Cursor, and GitHub Copilot in sync:
 
-| What | Claude Code | Cursor | GitHub Copilot |
-|------|-------------|--------|----------------|
-| MCP servers | `.mcp.json` | `.cursor/mcp.json` | `.vscode/mcp.json` |
-| Skills | `.claude/skills/` | `.cursor/skills/` (mirror) | — |
-| Agents | `.claude/agents/` | — | `.github/agents/` |
-| Instructions | `CLAUDE.md` | `AGENTS.md` | `.github/copilot-instructions.md` |
+| What         | Claude Code       | Cursor                     | GitHub Copilot                    |
+| ------------ | ----------------- | -------------------------- | --------------------------------- |
+| MCP servers  | `.mcp.json`       | `.cursor/mcp.json`         | `.vscode/mcp.json`                |
+| Skills       | `.claude/skills/` | `.cursor/skills/` (mirror) | —                                 |
+| Agents       | `.claude/agents/` | —                          | `.github/agents/`                 |
+| Instructions | `CLAUDE.md`       | `AGENTS.md`                | `.github/copilot-instructions.md` |
 
 1. Any MCP server added to `.mcp.json` must also go in `.vscode/mcp.json`
    and `.cursor/mcp.json`.

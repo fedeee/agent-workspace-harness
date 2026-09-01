@@ -19,7 +19,7 @@ a kept change in this git tree.
 
 - `/eval-loop` — one cycle from the latest ledger file
 - `/eval-loop continue` — one more cycle after the last one
-- `/eval-loop H2` — test that backlog item this cycle
+- `/eval-loop H1` — test that backlog item this cycle
 - `/eval-loop observe` — refresh baseline only; write no hypothesis
 
 ## Hard rules
@@ -39,9 +39,9 @@ a kept change in this git tree.
 6. **Do not** add a second user-visible budget meter (example D1).
 7. **Do not** keep a change after a vibe check (example D3). Score the
    gold set.
-8. **Do not** tear down the sidecar. `/mount-s3-db` owns mount and teardown.
+8. **Do not** tear down the sidecar. `/mount-production-db` owns mount and teardown.
 9. **Do not** run this loop on an empty or tiny gold set. `_eval/GOLD.csv`
-   needs at least **20** rows with `gold` set to `true_icp` or `false_icp`.
+   needs at least **20** rows with `gold` set to `in_class` or `out_class`.
    `unsure` does not count. You also need at least one labelled qualified
    row and one labelled excluded row. Do not score `GOLD.example.csv`.
 
@@ -79,7 +79,7 @@ Eval loop progress:
 ### 1. Guard dump
 
 1. Read `/tmp/eval-sidecar-mcp.env`. If it is missing, stop. Tell the user
-   to run `/mount-s3-db` first.
+   to run `/mount-production-db` first.
 2. Parse the host port from `EVAL_SIDECAR_URL`. Refuse **5432** and **5433**.
    `inet_server_port()` inside Docker is always 5432. Do not use it as the
    host-port check.
@@ -97,7 +97,7 @@ Eval loop progress:
 ### 2. Guard gold
 
 1. Confirm `_eval/GOLD.csv` exists. Do not score `_eval/GOLD.example.csv`.
-2. Count rows where `gold` is `true_icp` or `false_icp`. `unsure` does
+2. Count rows where `gold` is `in_class` or `out_class`. `unsure` does
    not count.
 3. If that count is below **20**, stop. Tell the user to label at least
    20 rows before `/eval-loop`. A header-only `GOLD.csv` is not valid.
@@ -118,9 +118,12 @@ file. There is no stock schema in this harness.
 ## Hypothesize
 
 Pick **one** item from `_eval/BACKLOG.md`, or write a new one.
+If the user passed `/eval-loop H1`, test that id.
 If `BACKLOG.md` is missing, copy `_eval/BACKLOG.example.md`.
 
 The hypothesis is one sentence. The predicted metric is one number.
+A new item gets the next free id (`H1`, `H2`, …) and status `open`,
+then `in-cycle`.
 
 Kill on sight:
 
@@ -150,9 +153,9 @@ only between cycles. Details: `_eval/README.md`.
 Metrics:
 
 - Precision error (false positive rate on qualified rows) =
-  `false_icp / labelled_qualified`
+  `out_class` on qualified / `labelled_qualified`
 - Recall error (false negative rate on excluded rows) =
-  `true_icp / labelled_excluded`
+  `in_class` on excluded / `labelled_excluded`
 
 These are classification error rates. They are not data leakage.
 

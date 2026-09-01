@@ -17,7 +17,7 @@ Do not commit `eval.env`.
 2. Set your backup bucket, region, and AWS profile.
 3. Set `EVAL_DB_NAME`, `EVAL_DB_USER`, and `EVAL_DB_PASS` to match
    the dump you restore. The sidecar Postgres uses these values.
-4. `/mount-s3-db` reads `eval.env` before it builds an S3 URI.
+4. `/mount-production-db` reads `eval.env` before it builds an S3 URI.
 
 | Variable | Role |
 |----------|------|

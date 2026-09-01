@@ -1,4 +1,4 @@
-# Throwaway Postgres for /mount-s3-db. Not a product compose file.
+# Throwaway Postgres for /mount-production-db. Not a product compose file.
 # The host port is chosen at mount time. Teardown runs `docker compose down -v`.
 services:
   db:

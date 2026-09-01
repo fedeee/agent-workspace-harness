@@ -2,7 +2,19 @@
 
 This is the live backlog.
 
+Write one open item per idea. One sentence. One predicted metric.
+Use the next free id (`H1`, `H2`, …).
+
 Status: `open` | `in-cycle` | `keep` | `kill`.
+
+Test an item with `/eval-loop H1`. Example: after you add `H1` as
+`open`, tell the agent:
+
+```
+/eval-loop H1
+```
+
+Or run `/eval-loop` and let the agent pick one open item.
 
 Kill on sight (do not add):
 
