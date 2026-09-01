@@ -1,0 +1,19 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# Local Claude Code permission overrides
+.claude/settings.local.json
+
+# Ephemeral Git worktrees for isolated agent tasks
+_worktrees/
+
+# Scratch, browser traces, UI captures
+_scratch/
+.playwright-mcp/
+/*.png
+
+# Machine secrets for /mount-s3-db
+_local/eval.env
+_local/*.env
+!_local/*.env.example

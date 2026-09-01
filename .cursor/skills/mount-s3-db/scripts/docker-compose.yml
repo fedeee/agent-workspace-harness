@@ -1,0 +1,20 @@
+# Throwaway Postgres for /mount-s3-db. Not a product compose file.
+# The host port is chosen at mount time. Teardown runs `docker compose down -v`.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${EVAL_DB_USER:-app}
+      POSTGRES_PASSWORD: ${EVAL_DB_PASS:-app}
+      POSTGRES_DB: ${EVAL_DB_NAME:-app}
+    ports:
+      - "${DB_PORT}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${EVAL_DB_USER:-app} -d ${EVAL_DB_NAME:-app}",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30

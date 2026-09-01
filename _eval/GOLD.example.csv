@@ -1,0 +1,5 @@
+campaign_id,icp,bucket,domain,url,company,db_fit,db_tier,gold,quote,why
+1,B2B distributors of industrial equipment,qualified,example-true.com,https://example-true.com,Example True,strong,A,true_icp,Catalogue lists industrial equipment for manufacturers.,
+1,B2B distributors of industrial equipment,qualified,example-false.com,https://example-false.com,Example False,strong,B,false_icp,Retail gift shop. Classifier overfit on one catalogue word.,precision error
+1,B2B distributors of industrial equipment,excluded,example-miss.com,https://example-miss.com,Example Miss,weak,C,true_icp,Hidden wholesale catalogue of industrial equipment.,recall error
+1,B2B distributors of industrial equipment,excluded,example-ok.com,https://example-ok.com,Example Ok,weak,C,false_icp,Consumer blog. Correctly excluded.,
