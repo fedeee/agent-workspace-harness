@@ -28,12 +28,28 @@ Harness skills:
 ## Git
 
 - Never `git push`. Never open SSH. The user pushes.
+- A project hook blocks `git push`, `ssh`, and `git commit --no-verify`.
+- Isolated worktrees: `scripts/worktree_agent.sh <branch>`. Clean with
+  `--clean <branch>`. Do not pass a `repos/` name.
 - Git ignores `_local/eval.env` (sidecar secrets). See `README.md`.
 - Ignore Postgres MCP connection failures unless the user asked for
   `/eval-loop`, `/mount-production-db`, or sidecar SQL. Do not edit `.mcp.json`
   to hide that error.
 - Do not run `/eval-loop` until `_eval/GOLD.csv` has at least 20
   labelled rows (`in_class` or `out_class`).
+
+## Session execution
+
+- Issue independent tool calls in one turn. Wait only on true data
+  dependence.
+- Retry a failed call only when it is a flake. Cap retries at two. Do
+  not retry a red test or a type error.
+- Search first. Read only the span you need. Do not dump whole files.
+- Background a full test suite, a long compile, or a sidecar restore.
+  Use `scripts/worktree_agent.sh` for an isolated parallel task.
+- Do not add a DAG scheduler, a knowledge graph, a message queue, or
+  extra machines from a skill. See D5 in `_plans/DECISIONS.md`.
+  Full text: `.claude/prompt-snippets/session-execution.md`.
 
 # Coding Standards
 

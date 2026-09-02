@@ -10,6 +10,7 @@ origin: template
 Stage and commit changes in this git tree.
 
 **Never push. Never use ssh.** The user pushes manually — agents are not granted those rights.
+A project hook also blocks `git push`, `ssh`, and `git commit --no-verify`.
 
 ## Scope
 

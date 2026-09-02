@@ -27,8 +27,7 @@ accurate and consistent with the current state of the project.
    - Product names that do not belong in the public harness
    - Any leftover `repos/` clone-manager language
    - Any leftover ceremony scripts (`check-onboard.sh`, `check-public-tree.sh`,
-     `worktree_agent.sh`, `harvest_eval_candidates.py`,
-     `bootstrap-overlay.sh`)
+     `harvest_eval_candidates.py`, `bootstrap-overlay.sh`)
 
 3. **Update each file** to reflect the current state:
    - Sync the file tree in README.md with the actual directory structure

@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 560" role="img" aria-label="Three durable layers: plan then implement, negative ADRs, offline eval. Create-plan writes the spec; implement-plan analyzes it, optionally fans out to worktree workers when the plan is large enough, then merges, tests, auto reviews, and hands to a human. The ledger is read before design and records dead ends after implementation.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <g>
+  <style>
+    .box{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.5}
+    .work{fill:#f0fdf4;stroke:#4ade80}
+    .gate{fill:#fff7ed;stroke:#fb923c}
+    .t2{font:600 13px ui-sans-serif,system-ui,sans-serif;fill:#0f172a}
+    .sub{font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#64748b}
+    .body{font:12px ui-sans-serif,system-ui,sans-serif;fill:#334155}
+    .num{font:700 12px ui-sans-serif,system-ui,sans-serif;fill:#fff}
+    .dot{fill:#6366f1}
+    .lbl{font:600 11px ui-sans-serif,system-ui,sans-serif;fill:#64748b}
+    .ln{stroke:#64748b;stroke-width:1.5;fill:none}
+    .opt{stroke:#94a3b8;stroke-width:1.5;fill:none;stroke-dasharray:5 4}
+  </style>
+
+  <g>
+    <rect class="box" x="20" y="16" width="240" height="112" rx="10"/>
+    <circle class="dot" cx="44" cy="40" r="10"/>
+    <text class="num" x="44" y="44" text-anchor="middle">1</text>
+    <text class="t2" x="62" y="44">Plan then implement</text>
+    <text class="sub" x="36" y="66">_plans/*.plan.md</text>
+    <text class="body" x="36" y="90">Map the spec, the files, and</text>
+    <text class="body" x="36" y="108">the dependencies before edits</text>
+  </g>
+
+  <g>
+    <rect class="box" x="330" y="16" width="200" height="112" rx="10"/>
+    <circle class="dot" cx="354" cy="40" r="10"/>
+    <text class="num" x="354" y="44" text-anchor="middle">2</text>
+    <text class="t2" x="372" y="44">Negative ADRs</text>
+    <text class="sub" x="346" y="66">_plans/DECISIONS.md</text>
+    <text class="body" x="346" y="90">Skip recorded dead ends</text>
+    <text class="body" x="346" y="108">before you design</text>
+  </g>
+
+  <g>
+    <rect class="box" x="600" y="16" width="240" height="112" rx="10"/>
+    <circle class="dot" cx="624" cy="40" r="10"/>
+    <text class="num" x="624" y="44" text-anchor="middle">3</text>
+    <text class="t2" x="642" y="44">Offline eval</text>
+    <text class="sub" x="616" y="66">_eval/ + sidecar DB</text>
+    <text class="body" x="616" y="90">Score one hypothesis on a</text>
+    <text class="body" x="616" y="108">frozen gold set, keep or kill</text>
+  </g>
+
+  <path class="ln" d="M330 96 H266" marker-end="url(#ah)"/>
+  <text class="lbl" x="298" y="86" text-anchor="middle">reads</text>
+
+  <path class="ln" d="M140 128 V146" marker-end="url(#ah)"/>
+  <text class="lbl" x="196" y="142" text-anchor="middle">/create-plan</text>
+
+  <rect class="box" x="20" y="150" width="240" height="52" rx="10"/>
+  <text class="t2" x="140" y="172" text-anchor="middle">Plan file</text>
+  <text class="sub" x="140" y="190" text-anchor="middle">steps · Depends on · Files</text>
+
+  <path class="ln" d="M140 202 V224 H430 V238" marker-end="url(#ah)"/>
+  <text class="lbl" x="272" y="218" text-anchor="middle">/implement-plan</text>
+
+  <rect class="box" x="290" y="242" width="280" height="52" rx="10"/>
+  <text class="t2" x="430" y="264" text-anchor="middle">Analyzer</text>
+  <text class="sub" x="430" y="282" text-anchor="middle">Depends on + Files → waves</text>
+
+  <path class="opt" d="M430 294 V308 H140 V324" marker-end="url(#ah)"/>
+  <path class="opt" d="M430 294 V324" marker-end="url(#ah)"/>
+  <path class="opt" d="M430 294 V308 H720 V324" marker-end="url(#ah)"/>
+
+  <g>
+    <rect class="box work" x="40" y="328" width="200" height="58" rx="10" stroke-dasharray="5 4"/>
+    <text class="t2" x="140" y="352" text-anchor="middle">Worker — step 1</text>
+    <text class="sub" x="140" y="371" text-anchor="middle">git worktree</text>
+  </g>
+  <g>
+    <rect class="box work" x="330" y="328" width="200" height="58" rx="10" stroke-dasharray="5 4"/>
+    <text class="t2" x="430" y="352" text-anchor="middle">Worker — step 2</text>
+    <text class="sub" x="430" y="371" text-anchor="middle">git worktree</text>
+  </g>
+  <g>
+    <rect class="box work" x="620" y="328" width="200" height="58" rx="10" stroke-dasharray="5 4"/>
+    <text class="t2" x="720" y="352" text-anchor="middle">Worker — step 3</text>
+    <text class="sub" x="720" y="371" text-anchor="middle">git worktree</text>
+  </g>
+
+  <text class="lbl" x="430" y="404" text-anchor="middle">optional — only when the plan is large enough; small plans run inline, serial</text>
+
+  <path class="ln" d="M140 386 V418 H430 V432" marker-end="url(#ah)"/>
+  <path class="ln" d="M430 386 V432" marker-end="url(#ah)"/>
+  <path class="ln" d="M720 386 V418 H430 V432" marker-end="url(#ah)"/>
+
+  <rect class="box" x="330" y="436" width="200" height="50" rx="10"/>
+  <text class="t2" x="430" y="456" text-anchor="middle">Merge + test suite</text>
+  <text class="sub" x="430" y="474" text-anchor="middle">step order · --no-ff · once</text>
+
+  <path class="ln" d="M430 486 V500" marker-end="url(#ah)"/>
+
+  <rect class="box" x="230" y="504" width="180" height="40" rx="10"/>
+  <text class="t2" x="320" y="529" text-anchor="middle">Auto review</text>
+
+  <rect class="box gate" x="470" y="504" width="200" height="40" rx="10"/>
+  <text class="t2" x="570" y="522" text-anchor="middle">Human review</text>
+  <text class="sub" x="570" y="537" text-anchor="middle">merge gate · never push</text>
+
+  <path class="ln" d="M410 524 H464" marker-end="url(#ah)"/>
+
+  <path class="ln" d="M530 461 H566 V72 H536" marker-end="url(#ah)"/>
+  <text class="lbl" x="580" y="270" text-anchor="middle" transform="rotate(-90 580 270)">records dead ends</text>
+
+  </g>
+</svg>

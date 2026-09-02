@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python3 .cursor/hooks/deny-shell.py",
+        "matcher": "git\\s+push|\\bssh\\s|--no-verify",
+        "failClosed": true,
+        "timeout": 5
+      }
+    ]
+  }
+}

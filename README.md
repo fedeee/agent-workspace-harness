@@ -23,18 +23,7 @@ This harness adds three durable layers to your repository:
 3. **Offline eval** (`_eval/`): Test one hypothesis against a frozen
    gold set on a local, read-only database sidecar.
 
-```
-                  ┌────────────────────────┐
-                  │   Agent chat session   │
-                  └───────────┬────────────┘
-                              │
-          ┌───────────────────┼───────────────────┐
-          ▼                   ▼                   ▼
-  1. Plan then implement   2. Negative ADRs    3. Offline eval
-   (_plans/*.md)           (DECISIONS.md)      (_eval/ + sidecar)
-  Map specs first          Skip recorded       Score the hypothesis
-                           dead ends           on a frozen gold set
-```
+<img src="docs/assets/harness-layers.svg" width="760" alt="The harness adds three durable layers to an agent chat session: plan then implement, negative ADRs, and offline eval." />
 
 ## Who's this for
 
@@ -109,6 +98,8 @@ See [`_eval/README.md`](_eval/README.md) for metrics and other commands.
 ├── _plans/                   # Specs + negative ADR ledger
 ├── _eval/                    # Eval protocol, cycles, gold schemas
 ├── _local/                   # Machine defaults (eval.env is gitignored)
+├── scripts/worktree_agent.sh # Isolated git worktrees of this tree
+├── .cursor/hooks.json        # Blocks git push, ssh, commit --no-verify
 ├── .claude/ / .cursor/ / .github /
 └── .mcp.json                 # Shared MCP tool definitions
 ```
@@ -126,21 +117,33 @@ Label at least 20 gold rows before `/eval-loop`.
 
 ### Commands
 
-| Command                  | Action                                                    |
-| ------------------------ | --------------------------------------------------------- |
-| `/create-plan <desc>`    | Draft a spec with steps and pseudocode.                   |
-| `/implement-plan [file]` | Execute a spec. Check off tasks. Record new dead ends.    |
-| `/mount-production-db`   | Restore a production dump into a local sidecar container. |
-| `/eval-loop`             | One observe → hypothesize → test → keep/kill cycle.       |
-| `/eval-loop H1`          | Test hypothesis `H1` this cycle.                          |
+| Command                  | Action                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `/create-plan <desc>`    | Draft a spec with steps, `Depends on` edges, and pseudocode.                             |
+| `/implement-plan [file]` | Execute a spec. Independent steps run as parallel worktree workers. Merge, test, review. |
+| `/mount-production-db`   | Restore a production dump into a local sidecar container.                                |
+| `/eval-loop`             | One observe → hypothesize → test → keep/kill cycle.                                      |
+| `/eval-loop H1`          | Test hypothesis `H1` this cycle.                                                         |
 | `/commit`                | Stage and commit this repo. Agents never run `git push`.  |
+
+A hook also blocks `git push`, `ssh`, and `git commit --no-verify`.
+
+Isolated worktrees:
+
+```bash
+scripts/worktree_agent.sh <branch>
+scripts/worktree_agent.sh --clean <branch>
+```
 
 ## Tooling
 
-This design keeps bash small. Most rules live in markdown and skills.
+This design keeps bash small. A hook blocks forbidden git and ssh
+commands. Most other rules live in markdown and skills.
 
 | Path                                  | Role                                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `.cursor/hooks/deny-shell.py`         | Deny `git push`, `ssh`, and `git commit --no-verify`. Cursor and Claude Code both run this script.                              |
+| `scripts/worktree_agent.sh`           | Isolated git worktree of this tree. No `repos/` name. Copies `_local/eval.env` when it exists.                                  |
 | `.claude/skills/mount-production-db/` | Docker Postgres sidecar: fetch the S3 dump, create `eval_ro`, tear down. Keep the Cursor mirror in `.cursor/skills/` identical. |
 
 ## MCP servers

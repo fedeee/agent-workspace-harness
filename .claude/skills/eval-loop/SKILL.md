@@ -150,6 +150,16 @@ read-only SQL with `psql` and `DATABASE_URL` from the sidecar state
 file. Write CSV under `_scratch/eval-loop/`. Review that file. Append
 only between cycles. Details: `_eval/README.md`.
 
+Gold growth is the one place to run workers. Between cycles, spawn one
+subagent per dump slice. Each writes its own CSV under
+`_scratch/eval-loop/`. No worker writes `_eval/`. The operator reviews
+the CSVs and appends.
+
+Do not run hypotheses in parallel. Score three hypotheses on the same
+20 rows, keep the best, and you keep noise. One row is 5 % of the
+metric. Two hypotheses that pass alone can fail together. One hypothesis
+per cycle stays until the gold set is large enough for a held-out split.
+
 Metrics:
 
 - Precision error (false positive rate on qualified rows) =

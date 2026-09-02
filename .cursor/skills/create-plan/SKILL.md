@@ -60,12 +60,16 @@ for format only. Do not treat example IDs as this workspace's ledger.
 
 Read the code in this git tree. Do not invent API surfaces or types.
 
-1. Identify and read:
+Follow `.claude/prompt-snippets/session-execution.md`.
+
+1. Search first (grep, glob, definition or caller lookup). Identify:
    - API endpoints or routes relevant to the work
    - Type definitions, interfaces, or schemas involved
    - Key files that will need changes
    - Any existing tests for the affected code
-2. Distill this into compact summaries — don't paste entire files
+2. Issue independent reads and searches in one turn. Read only the
+   span you need.
+3. Distill this into compact summaries — don't paste entire files
 
 ### 5. Write the Plan File
 
@@ -92,11 +96,13 @@ created: <today's date>
 - [ ] Step 1: <brief title>
   - **Task**: <detailed explanation of what to do>
   - **Files**: <list of files to create or modify, with full paths>
+  - **Depends on**: none
   - **Pseudocode**: <high-level pseudocode, NOT real code>
 
 - [ ] Step 2: <brief title>
   - **Task**: <detailed explanation>
   - **Files**: <file list>
+  - **Depends on**: Step 1
   - **Pseudocode**: <pseudocode>
 
 (continue for all steps)
@@ -104,12 +110,33 @@ created: <today's date>
 - [ ] Step N: Validate
   - **Task**: Run the application and tests, verify everything works
   - **Files**: <test files>
+  - **Depends on**: all
 ```
+
+`/implement-plan` reads `Depends on` and `Files` to group steps into
+waves. Steps in one wave run as parallel workers, each in its own git
+worktree. This is the default. There is no flag. To force serial order,
+add a `Depends on` edge.
+
+Rules for `Depends on`:
+
+- `none` — the step needs no earlier step.
+- `Step 1, Step 3` — the step needs those steps merged first.
+- `all` — use on the Validate step.
+- Two steps that list the same file are serial. Put the edge in anyway.
+- A step that touches a serial file stands alone: a database migration,
+  a lockfile or package manifest, `.env`, anything under `_plans/` or
+  `_eval/`. Give every later step an edge to it.
 
 ### 6. Plan Quality Checklist
 
 Before finishing, verify the plan:
 - [ ] Steps are ordered by dependency (do X before Y if Y depends on X)
+- [ ] Every step has a `Depends on` line (`none`, step list, or `all`)
+- [ ] Steps with no edge between them list disjoint `Files`
+- [ ] Steps that touch a serial file (migration, lockfile, `.env`,
+      `_plans/`, `_eval/`) stand alone
+- [ ] Independent context reads are listed as parallel tool calls
 - [ ] Each step is small enough to implement and verify independently
 - [ ] Pseudocode is used, not real code — implementation details are for `/implement-plan`
 - [ ] Files listed actually exist (or are clearly marked as "new file")
@@ -141,6 +168,9 @@ Tell the user:
 - Always read the code to gather real context — don't fabricate API surfaces or types
 - If the tree has no product code yet, note that in the context section
 - Keep it simple — avoid over-architecture. The plan should be the simplest path to done.
+- Split work into steps that own disjoint files where the work allows it.
+  That is what lets `/implement-plan` run them in parallel. Do not split
+  a step only to make a wave bigger.
 - Use pseudocode only, not real code
 - Call out any points where user input or decisions are needed
 - Dated plans live in this git tree. Git also tracks `EXAMPLE.plan.md`

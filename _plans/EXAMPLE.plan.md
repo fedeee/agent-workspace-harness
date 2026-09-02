@@ -32,13 +32,16 @@ example cites the public format file only.
 - [ ] Step 1: Backend OAuth endpoint
   - **Task**: Add a Google OAuth client and create POST /api/auth/google
   - **Files**: `src/routes/auth.ts` (example path)
+  - **Depends on**: none
   - **Pseudocode**: Validate Google token, exchange for session, return AuthResponse
 
 - [ ] Step 2: Frontend OAuth UI
   - **Task**: Add a Google sign-in button and wire the redirect flow
   - **Files**: `src/components/LoginForm.tsx` (example path)
+  - **Depends on**: none
   - **Pseudocode**: Render Google button, handle OAuth callback, store token
 
 - [ ] Step 3: Validate
   - **Task**: Run the application and tests. Confirm the full OAuth flow.
   - **Files**: `tests/auth.test.ts` (example path)
+  - **Depends on**: all

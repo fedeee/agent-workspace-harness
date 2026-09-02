@@ -35,3 +35,6 @@ The read-only eval user is always `eval_ro`. The mount script creates
 it after restore. Postgres MCP and `/eval-loop` refuse any other user.
 
 See [_eval/README.md](../_eval/README.md).
+
+`scripts/worktree_agent.sh` copies `eval.env` into a new worktree when
+the file exists. Edits in the worktree stay there.

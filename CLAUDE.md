@@ -16,6 +16,22 @@ files into an existing app repo.
 **Never run `git push` and never use `ssh`.** The user pushes. Commits
 stay local. Report them as ready to push.
 
+A project hook blocks `git push`, `ssh`, and `git commit --no-verify`.
+Cursor reads `.cursor/hooks.json`. Claude Code reads `.claude/settings.json`.
+Both run `.cursor/hooks/deny-shell.py`.
+
+### Worktrees
+
+Use an isolated copy of this tree for experiments and parallel agent tasks:
+
+```bash
+scripts/worktree_agent.sh <branch>
+scripts/worktree_agent.sh --clean <branch>
+```
+
+Do not pass a `repos/` name. This harness is one git repository.
+Cleanup does not delete the branch. Scope the agent to the new path.
+
 ### Plan System
 
 `_plans/` holds implementation plans.
@@ -65,6 +81,11 @@ All docs, READMEs, task files, plans, commit messages, and responses use
 @.claude/prompt-snippets/coding-standards.md
 [Coding Standards](./.claude/prompt-snippets/coding-standards.md)
 
+## Session execution
+
+@.claude/prompt-snippets/session-execution.md
+[Session execution](./.claude/prompt-snippets/session-execution.md)
+
 ## Commit Message Style
 
 @.claude/prompt-snippets/commit-message.md
@@ -79,18 +100,21 @@ two agentic features. If an instruction is only used once, inline it.
 
 Keep Claude Code, Cursor, and GitHub Copilot in sync:
 
-| What         | Claude Code       | Cursor                     | GitHub Copilot                    |
-| ------------ | ----------------- | -------------------------- | --------------------------------- |
-| MCP servers  | `.mcp.json`       | `.cursor/mcp.json`         | `.vscode/mcp.json`                |
-| Skills       | `.claude/skills/` | `.cursor/skills/` (mirror) | —                                 |
-| Agents       | `.claude/agents/` | —                          | `.github/agents/`                 |
-| Instructions | `CLAUDE.md`       | `AGENTS.md`                | `.github/copilot-instructions.md` |
+| What         | Claude Code              | Cursor                     | GitHub Copilot                    |
+| ------------ | ------------------------ | -------------------------- | --------------------------------- |
+| MCP servers  | `.mcp.json`              | `.cursor/mcp.json`         | `.vscode/mcp.json`                |
+| Skills       | `.claude/skills/`        | `.cursor/skills/` (mirror) | —                                 |
+| Agents       | `.claude/agents/`        | —                          | `.github/agents/`                 |
+| Hooks        | `.claude/settings.json`  | `.cursor/hooks.json`       | —                                 |
+| Instructions | `CLAUDE.md`              | `AGENTS.md`                | `.github/copilot-instructions.md` |
 
 1. Any MCP server added to `.mcp.json` must also go in `.vscode/mcp.json`
    and `.cursor/mcp.json`.
 2. Edit a skill in `.claude/skills/` first, then copy it to
    `.cursor/skills/`. The two trees must match.
 3. Shared standards must stay consistent across tools.
+4. Shell deny hooks: keep `.cursor/hooks.json` and `.claude/settings.json`
+   pointed at the same script.
 
 ## Self-Improvement
 
