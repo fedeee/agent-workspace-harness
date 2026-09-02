@@ -29,6 +29,19 @@ This harness adds three durable layers to your repository:
 
 The Agent Workspace Harness is built specifically for software engineers, data scientists, and technical founders who use AI coding agents (like Claude or Cursor) to build, refactor, or maintain data-intensive systems, search pipelines, and classification logic.
 
+It provides a lightweight, local operating system for working with AI coding agents. Rather than running a heavyweight external control plane, it relies on files in the repo to keep agents aligned, prevent repeated mistakes, and coordinate parallel execution.
+
+*Comparison: Repo-native harness vs. enterprise agent infrastructure*
+
+| | This harness | Enterprise agent infra |
+|---|---|---|
+| Control plane | The LLM, reading the plan | A scheduler/runtime |
+| State | Markdown files in git | Databases, checkpoint stores |
+| Failure handling | Agent reads the error, fixes the plan | Retry policies, dead-letter queues |
+| Isolation | git worktrees + a deny hook | Containers, VMs, network policy |
+| Trust model | Human reviews before push | System enforces without a human |
+| Cost to run | A repo and an agent | A platform team |
+
 ## How to use the three layers
 
 ### 1. Plan then implement
