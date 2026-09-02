@@ -9,6 +9,10 @@ This is a single-repo **agent harness**. This git tree holds
 orchestration rules, living plans, domain memory, measurement loops,
 and product code.
 
+This is a shareable template. Do not record harness-internal planning
+in `_plans/` or `_plans/DECISIONS.md`. Standing harness rules live in
+`CLAUDE.md`, skills, and `.claude/prompt-snippets/`.
+
 Do not add a `repos/` clone manager. Put product code in this tree,
 or copy these harness files into an existing app repo.
 
@@ -48,8 +52,8 @@ Harness skills:
 - Background a full test suite, a long compile, or a sidecar restore.
   Use `scripts/worktree_agent.sh` for an isolated parallel task.
 - Do not add a DAG scheduler, a knowledge graph, a message queue, or
-  extra machines from a skill. See D5 in `_plans/DECISIONS.md`.
-  Full text: `.claude/prompt-snippets/session-execution.md`.
+  extra machines from a skill. Full text:
+  `.claude/prompt-snippets/session-execution.md`.
 
 # Coding Standards
 

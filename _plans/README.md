@@ -84,9 +84,8 @@ When `/implement-plan` runs against a plan:
 9. Sets `status: completed` when all steps pass
 
 Parallel is the default. There is no flag. Add a `Depends on` edge to
-force serial order. The orchestrator is the scheduler; there is no
-engine (D5 in `DECISIONS.md`). Workers never edit the plan file,
-`DECISIONS.md`, or `_eval/`.
+force serial order. The orchestrator is the scheduler. There is no
+engine. Workers never edit the plan file, `DECISIONS.md`, or `_eval/`.
 
 The plan becomes a living document — a record of what was planned AND what actually happened.
 
@@ -96,24 +95,31 @@ The plan becomes a living document — a record of what was planned AND what act
 proposed, evaluated and **rejected** — plus the ones that shipped and were
 reversed.
 
-The live ledger is `_plans/DECISIONS.md`.
+The live ledger is `_plans/DECISIONS.md`. The template ships it empty.
 `_plans/DECISIONS.example.md` shows the format with fake product
 entries. Do not copy the example file onto `DECISIONS.md`. Those IDs
 are not this workspace's ledger.
 
+This is a shareable harness template. Record product decisions only.
+Do not record harness-internal planning, template design debates, or
+standing harness rules in this folder. Those live in `CLAUDE.md`,
+skills, and `.claude/prompt-snippets/`.
+
 - **Read it before designing.** `/create-plan` reads `_plans/DECISIONS.md`
   when that file exists. If it is missing, read the example file for
   format only. Cite the entry ID (`D16`) when a plan touches one.
-- **Append when something is ruled out.** `/create-plan` records what the plan
-  decides against; `/implement-plan` records what implementation disproved.
+- **Append when product work rules something out.** `/create-plan`
+  records what the plan decides against; `/implement-plan` records what
+  implementation disproved.
 - **Never renumber.** A reversed entry keeps its ID, changes status to
   `reversed`, and states the current answer in the claim.
 
 Plans are long and each one is read for its own work. The ledger is the one file
 read *before* the work, which is why it exists separately.
 
-Dated `*.plan.md` files live in this git tree. Git also tracks
-`EXAMPLE.plan.md` as format only.
+Dated `*.plan.md` files are product work for this git tree. Git also
+tracks `EXAMPLE.plan.md` as format only. Do not add a dated plan for a
+harness-internal design debate.
 
 ## Eval loop
 
@@ -131,4 +137,4 @@ Raw eval CSVs stay in `_scratch/eval-loop/` (gitignored).
 1. **Session continuity** — fresh agents get full context from the plan, no re-explaining
 2. **Trackable progress** — checkboxes show exactly where implementation stands
 3. **Self-documenting** — the plan records decisions, discoveries, and fixes as they happen
-4. **No repeated dead ends** — `DECISIONS.md` is what stops an invalidated direction being proposed again
+4. **No repeated dead ends** — `DECISIONS.md` stops an invalidated product direction being proposed again

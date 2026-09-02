@@ -1,6 +1,6 @@
-# Agentic Workspace with Anti-Regression Harness
+# Agent Workspace Harness
 
-This is a layered workspace harness combining Negative ADRs, Spec-first workflows and Offline empirical eval loops.
+A layered harness for AI coding agents: Negative ADRs, spec-first plan-then-implement with parallel execution in git worktrees, and offline empirical eval loops.
 
 ## The problem
 
@@ -46,6 +46,8 @@ The agent executes the steps in order and checks them off.
 
 The ledger is [`_plans/DECISIONS.md`](_plans/DECISIONS.md).
 Classic ADRs record what you adopted. This file records what you disproved.
+The template ships it empty. Example entries live in
+[`DECISIONS.example.md`](_plans/DECISIONS.example.md).
 
 Memory is automatic. You do not tell the agent to memorize a failure.
 

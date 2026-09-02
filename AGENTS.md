@@ -14,6 +14,8 @@ Short version:
 - Isolated worktrees: `scripts/worktree_agent.sh <branch>`.
 - Read `_plans/DECISIONS.md` before you design. If it is missing, read
   `_plans/DECISIONS.example.md` for format only.
+- Do not record harness-internal planning in `_plans/` or
+  `DECISIONS.md`. Standing harness rules live in `CLAUDE.md` and skills.
 - Score `_eval/GOLD.csv`. Do not score `GOLD.example.csv`.
 - Do not run `/eval-loop` until `GOLD.csv` has at least 20 labelled
   rows (`in_class` or `out_class`). `unsure` does not count.
@@ -25,6 +27,7 @@ Short version:
   retries at two.
 - Search, then read a span. Do not dump whole files into context.
 - Background a long compile or a full test suite. Do not wait idle.
-  See D5 in `_plans/DECISIONS.md`.
+  Do not add a DAG scheduler, a knowledge graph, a message queue, or
+  extra machines from a skill.
 
 Skills live in `.claude/skills/` and are mirrored under `.cursor/skills/`.

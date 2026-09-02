@@ -48,6 +48,19 @@ tree.
 ## Out of scope
 
 Do not add a DAG scheduler, a knowledge graph beside the tree, a message
-queue, or extra machines from a skill. See D5 in `_plans/DECISIONS.md`.
-Dependency data in a plan file is not an engine. A process that outlives
-the session is.
+queue, or extra machines from a skill.
+
+The orchestrator agent already schedules work. A second scheduler
+holds state when no agent turn is active. That is a second control
+plane.
+
+A script that reads `Depends on` from a plan and prints waves is a
+formatter. It is allowed. A process that spawns workers, polls them,
+or writes status after the session ends is not.
+
+Dependency data in a plan file is not an engine.
+
+Do not record harness-internal planning in `_plans/`, in
+`_plans/DECISIONS.md`, or in dated plan files. Standing harness rules
+live in this file, in `CLAUDE.md`, and in skills. The live ledger is
+for the product in this git tree.

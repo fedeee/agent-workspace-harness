@@ -38,12 +38,16 @@ Format: `YYYYMMDD-<plan-name>.plan.md`
 
 ### 3. Check the Decisions Ledger — before designing anything
 
-Read `_plans/DECISIONS.md` when that file exists. It lists directions
-already proposed, evaluated and rejected, plus ones that shipped and
-were reversed.
+Read `_plans/DECISIONS.md` when that file exists. It lists product
+directions already proposed, evaluated and rejected, plus ones that
+shipped and were reversed.
 
 If `_plans/DECISIONS.md` is missing, read `_plans/DECISIONS.example.md`
 for format only. Do not treat example IDs as this workspace's ledger.
+
+Do not record harness-internal planning. Standing harness rules live
+in `CLAUDE.md`, skills, and `.claude/prompt-snippets/`. The live
+ledger is for the product in this git tree.
 
 1. Scan the relevant subsystem rows in the Decisions Index.
 2. Verify each specific entry before you design the change.
@@ -143,6 +147,7 @@ Before finishing, verify the plan:
 - [ ] A validation step exists at the end
 - [ ] Any user intervention points are called out
 - [ ] `_plans/DECISIONS.md` was read, and any entry the plan touches is cited
+- [ ] The plan is product work, not a harness-internal design debate
 
 ### 7. Record new decisions
 
@@ -151,9 +156,12 @@ If the plan rules an approach out — or reverses an existing entry — append i
 per decision: the claim as a heading, then **Status**, **Why**, and a link back
 to this plan. Never renumber existing entries.
 
-Only record directions that were genuinely considered and rejected. A list of
+Only record directions that product work considered and rejected. A list of
 everything not built is noise; the ledger is for things someone would otherwise
 propose again.
+
+Do not append harness-internal planning, template design debates, or
+standing harness rules. Those do not belong in `_plans/DECISIONS.md`.
 
 ### 8. Report
 
@@ -174,5 +182,6 @@ Tell the user:
 - Use pseudocode only, not real code
 - Call out any points where user input or decisions are needed
 - Dated plans live in this git tree. Git also tracks `EXAMPLE.plan.md`
-  as format only.
+  as format only. Dated plans are product work. Do not add a dated plan
+  for a harness-internal design debate.
 - Review the plan with the user before they run `/implement-plan`

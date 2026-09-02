@@ -3,9 +3,10 @@
 This file shows the **shape** of a negative ADR ledger. It is not this
 workspace's live ledger.
 
-The live ledger is `_plans/DECISIONS.md`. Agents read it before they
-design. If it is missing, use this file only as a format guide. Do not
-treat these example IDs as settled product decisions.
+The live ledger is `_plans/DECISIONS.md`. The template ships that file
+empty. Agents read it before they design. If it is missing, use this
+file only as a format guide. Do not treat these example IDs as settled
+product decisions. Do not copy this file onto `DECISIONS.md`.
 
 ## Decisions Index
 
@@ -14,7 +15,7 @@ treat these example IDs as settled product decisions.
 | [Budget](#budget) | D1 | Keep one user-visible meter. |
 | [Classifier](#classifier) | D2 | Keep vertical words in settings, not in engine source. |
 | [Eval](#eval) | D3 | Measure one hypothesis against a frozen gold set. |
-| [Harness](#harness) | D4 | Do not wrap product remotes in a clone manager. |
+| [Search](#search) | D4 | Keep one read path for the same list. |
 
 ## How to read a status
 
@@ -56,11 +57,12 @@ renumber.
 - **Why**: One edge case improved while recall error rose on the frozen gold set.
 - **Do not** keep a change unless precision error drops and recall error does not rise.
 
-## Harness
+## Search
 
-### D4 — Clone manager around the product tree
+### D4 — Second read model for the same list
 - **Status**: settled (example)
-- **Was**: Inner remotes under `repos/` plus `/add-repository`.
-- **Why**: Joiners had to invent remotes. The clone layer hid the eval loop.
-- **Do not** add a `repos/` clone manager to this harness. Put product
-  code in this git tree.
+- **Was**: Add a search index beside the primary store for one list page.
+- **Why**: Two sources of truth. The list drifted. Joiners did not know
+  which query was canonical.
+- **Do not** add a second read path for the same list until a cycle
+  keeps it.

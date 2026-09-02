@@ -26,8 +26,10 @@ accurate and consistent with the current state of the project.
    - Broken relative links
    - Product names that do not belong in the public harness
    - Any leftover `repos/` clone-manager language
-   - Any leftover ceremony scripts (`check-onboard.sh`, `check-public-tree.sh`,
-     `harvest_eval_candidates.py`, `bootstrap-overlay.sh`)
+   - Harness-internal planning in `_plans/DECISIONS.md` or dated
+     `*.plan.md` files. The live ledger starts empty. Example IDs live
+     only in `DECISIONS.example.md`. Standing harness rules live in
+     `CLAUDE.md`, skills, and prompt snippets.
 
 3. **Update each file** to reflect the current state:
    - Sync the file tree in README.md with the actual directory structure

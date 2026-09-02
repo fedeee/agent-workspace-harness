@@ -13,8 +13,7 @@ This skill combines the "implement" and "run" phases into one — you build it, 
 
 Flow: load plan → analyze dependencies → run waves (parallel workers in
 worktrees where steps are independent) → merge → test → auto review →
-human. The orchestrator (you) is the scheduler. There is no engine. See
-D5 in `_plans/DECISIONS.md`.
+human. The orchestrator (you) is the scheduler. There is no engine.
 
 ## Arguments
 
@@ -219,12 +218,17 @@ Append to `_plans/DECISIONS.md` when that file exists and implementation:
   overturned an earlier plan's entry. Edit that entry's status to **reversed**
   and rewrite the claim to the current answer; keep the history in *Why*.
 
-If `_plans/DECISIONS.md` is missing, create it from
-`_plans/DECISIONS.example.md` first, then append. Commit the live
-ledger with the rest of this git tree.
+If `_plans/DECISIONS.md` is missing, recreate an empty ledger. Copy the
+status table from `_plans/DECISIONS.example.md`. Leave the index empty.
+Do not copy example IDs. Then append. Commit the live ledger with the
+rest of this git tree.
 
 Use the next free ID in the relevant section. Never renumber. Skip the ordinary
 stuff — a step you skipped for time is not a decision, it is a to-do.
+
+Do not append harness-internal planning. Standing harness rules live
+in `CLAUDE.md` and skills. The live ledger is for the product in this
+git tree.
 
 ### 10. Complete the Plan
 

@@ -42,15 +42,22 @@ Cleanup does not delete the branch. Scope the agent to the new path.
 - `/eval-loop` — one observe → hypothesize → test → keep/kill cycle
 - `/mount-production-db` — restore a dump onto a throwaway sidecar Postgres
 
-**`_plans/DECISIONS.md` is the ledger of directions already tried and
-invalidated.** Read it before proposing an architecture change. Cite the
-entry ID. Append when a plan or an implementation rules an approach out.
+**`_plans/DECISIONS.md` is the ledger of product directions already
+tried and invalidated.** Read it before you design. Cite the entry ID.
+Append when product work rules an approach out.
 
-If `_plans/DECISIONS.md` is missing, read `_plans/DECISIONS.example.md`
-for format only. Do not treat example IDs as this workspace's ledger.
+This git tree is a shareable harness template. Do not record
+harness-internal planning in `_plans/`, in `DECISIONS.md`, or in dated
+plan files. Standing harness rules live in this file, in skills, and
+in `.claude/prompt-snippets/`.
 
-The live ledger, dated plans, and gold labels live in this git tree.
-The public vs local table is in [README.md](README.md).
+The template ships an empty ledger. Example entries live in
+`_plans/DECISIONS.example.md`. Do not treat those IDs as this
+workspace's ledger.
+
+If `_plans/DECISIONS.md` is missing, read the example file for format
+only.
+
 Git ignores `_local/eval.env` only (sidecar secrets).
 
 Score `_eval/GOLD.csv` when it exists. Do not score `GOLD.example.csv`.
