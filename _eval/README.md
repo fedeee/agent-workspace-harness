@@ -1,9 +1,14 @@
 # Eval-loop ledger
 
-Operator cycle files for offline evaluation. One file per cycle.
+Operator cycle files for offline evaluation and pipeline debugging. One file per cycle.
 
 The loop measures a mounted dump. It does not write the dump.
 The operator applies a kept change in this git tree.
+
+The loop supports two workflows:
+
+1. **Pipeline and platform debugging**: Analyze error distributions (such as HTTP 429 rate limits, 403s, or timeouts) on a dump slice. Test a fix with a predicted recovery metric.
+2. **Classifier evaluation**: Score precision error and recall error against a frozen gold set in `GOLD.csv`.
 
 `_plans/` holds dated implementation plans. This folder holds the
 eval ledger.
@@ -101,7 +106,7 @@ Keep a change if precision error drops and recall error does not rise.
 
 ## Minimum gold set
 
-Do not run `/eval-loop` until `_eval/GOLD.csv` has at least **20**
+For classifier evaluations, do not run `/eval-loop` until `_eval/GOLD.csv` has at least **20**
 rows with `gold` set to `in_class` or `out_class`. `unsure` does not
 count. You also need at least one labelled qualified row and one
 labelled excluded row so both rates have a denominator.

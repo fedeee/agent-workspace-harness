@@ -21,7 +21,7 @@ This harness adds three durable layers to your repository:
    you adopted. This ledger records what you disproved. Agents then skip
    those dead ends.
 3. **Offline eval** (`_eval/`): Test one hypothesis against a frozen
-   gold set on a local, read-only database sidecar.
+   gold set or database dump to evaluate models and debug pipeline issues.
 
 <img src="docs/assets/harness-layers.svg" width="760" alt="The harness adds three durable layers to an agent chat session: plan then implement, negative ADRs, and offline eval." />
 
@@ -72,18 +72,20 @@ A new chat session reads that file first. It then skips those dead ends.
 
 ### 3. Offline eval
 
-Score one hypothesis on a frozen gold set.
+Test one hypothesis against a mounted dump or a frozen gold set.
+Use the eval loop for classifier evaluation and pipeline debugging.
 Do not implement the change until a cycle keeps it.
 
-Do this setup once:
+The eval loop handles two tasks:
 
-1. Write the class rules in [`_eval/GOLD.md`](_eval/GOLD.md).
-2. Label at least **20** rows in [`_eval/GOLD.csv`](_eval/GOLD.csv).
-   Set `gold` to `in_class` or `out_class`. Do not count `unsure` rows.
-   Label one qualified row and one excluded row.
-3. Copy `_local/eval.env.example` to `_local/eval.env`. Fill the dump
-   fields.
-4. Run `/mount-production-db`.
+- **Pipeline and platform debugging**: Diagnose crawl errors, rate limits (HTTP 429), timeouts, and system bottlenecks. Test a fix against dump error distributions with a target recovery metric.
+- **Classifier evaluation**: Measure precision error and recall error on a frozen gold set in [`_eval/GOLD.csv`](_eval/GOLD.csv).
+
+Setup:
+
+1. Copy `_local/eval.env.example` to `_local/eval.env`. Fill the dump fields.
+2. Run `/mount-production-db` to restore the dump into the local sidecar.
+3. For classifier evaluations, write class rules in [`_eval/GOLD.md`](_eval/GOLD.md) and label at least **20** rows in [`_eval/GOLD.csv`](_eval/GOLD.csv).
 
 For each idea:
 
@@ -92,14 +94,14 @@ For each idea:
 ```
 
 1. Run `/create-plan` with the change you want to measure.
-2. Add one open item to [`_eval/BACKLOG.md`](_eval/BACKLOG.md).
-   Write one sentence. Name one predicted metric. Use the next free id
-   (`H1`, `H2`, …).
+2. Add one open item to [`_eval/BACKLOG.md`](_eval/BACKLOG.md). Write one sentence. Name one predicted metric. Use the next free id (`H1`, `H2`, …).
 3. Run `/eval-loop H1`.
 4. If the verdict is keep, run `/implement-plan`.
 
-Keep a change only if precision error drops and recall error does not
-rise.
+Keep rules:
+
+- **Pipeline debugging**: Keep a change if it meets the predicted recovery metric without new errors.
+- **Classifier evaluation**: Keep a change only if precision error drops and recall error does not rise.
 
 Do not score `GOLD.example.csv`.
 See [`_eval/README.md`](_eval/README.md) for metrics and other commands.
@@ -128,7 +130,7 @@ cp _local/eval.env.example _local/eval.env
 ```
 
 Fill the bucket, region, and database fields before `/mount-production-db`.
-Label at least 20 gold rows before `/eval-loop`.
+Label at least 20 gold rows before classifier `/eval-loop`.
 
 ### Commands
 
