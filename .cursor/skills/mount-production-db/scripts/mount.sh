@@ -2,6 +2,7 @@
 # Mount a Postgres dump from S3 into a throwaway local sidecar.
 # Never binds EVAL_FORBIDDEN_PORTS (default 5432,5433).
 set -euo pipefail
+umask 077
 
 RO_USER="eval_ro"
 RO_PASS="eval_ro"
@@ -12,7 +13,7 @@ COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 find_workspace_root() {
   local d="$SCRIPT_DIR"
   while [[ "$d" != "/" ]]; do
-    if [[ -f "$d/_eval/README.md" && -d "$d/_local" ]]; then
+    if [[ -e "$d/.git" && -d "$d/_local" ]]; then
       echo "$d"
       return 0
     fi
@@ -22,7 +23,7 @@ find_workspace_root() {
 }
 
 WORKSPACE_ROOT="$(find_workspace_root)" || {
-  echo "error: could not find workspace root containing _eval/ and _local/ (from $SCRIPT_DIR)" >&2
+  echo "error: could not find git workspace with _local/ (from $SCRIPT_DIR)" >&2
   exit 1
 }
 
@@ -40,7 +41,7 @@ DB_NAME="${EVAL_DB_NAME:-app}"
 DB_USER="${EVAL_DB_USER:-app}"
 DB_PASS="${EVAL_DB_PASS:-app}"
 FORBIDDEN_PORTS="${EVAL_FORBIDDEN_PORTS:-5432,5433}"
-MCP_ENV_FILE="${EVAL_MCP_ENV:-/tmp/eval-sidecar-mcp.env}"
+MCP_ENV_FILE="${EVAL_MCP_ENV:-/tmp/eval-sidecar-mcp.json}"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "error: missing $COMPOSE_FILE" >&2
@@ -117,8 +118,8 @@ S3_URI="$(resolve_s3_uri "$ARG")"
 SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4().hex[:12])')"
 COMPOSE_PROJECT="eval-sidecar-${SESSION_ID}"
 STATE_DIR="/tmp/eval-sidecar-${SESSION_ID}"
-DUMP_PATH="${STATE_DIR}/${DB_NAME}.dump"
-STATE_FILE="${STATE_DIR}/state.env"
+DUMP_PATH="${STATE_DIR}/database.dump"
+STATE_FILE="${STATE_DIR}/state.json"
 DB_PORT="$(pick_free_port)"
 
 if is_forbidden_port "$DB_PORT"; then
@@ -127,6 +128,21 @@ if is_forbidden_port "$DB_PORT"; then
 fi
 
 mkdir -p "$STATE_DIR"
+
+# Preserve no partial restore as an eval baseline. Keep recovery state if cleanup fails.
+cleanup_failed_mount() {
+  local result=$?
+  if [[ "$result" != 0 ]]; then
+    if COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" DB_PORT="$DB_PORT" \
+      EVAL_DB_USER="$DB_USER" EVAL_DB_PASS="$DB_PASS" EVAL_DB_NAME="$DB_NAME" \
+      docker compose -f "$COMPOSE_FILE" down -v >&2; then
+      rm -rf "$STATE_DIR"
+    else
+      echo "error: cleanup failed; sidecar project $COMPOSE_PROJECT needs manual cleanup" >&2
+    fi
+  fi
+}
+trap cleanup_failed_mount EXIT
 
 echo "[mount-production-db] session=$SESSION_ID" >&2
 echo "[mount-production-db] downloading $S3_URI → $DUMP_PATH" >&2
@@ -166,13 +182,6 @@ if ! COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
     docker compose -f "$COMPOSE_FILE" exec -T db \
     pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
   echo "error: sidecar Postgres did not become ready" >&2
-  COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
-    DB_PORT="$DB_PORT" \
-    EVAL_DB_USER="$DB_USER" \
-    EVAL_DB_PASS="$DB_PASS" \
-    EVAL_DB_NAME="$DB_NAME" \
-    docker compose -f "$COMPOSE_FILE" down -v >&2 || true
-  rm -rf "$STATE_DIR"
   exit 1
 fi
 
@@ -188,15 +197,8 @@ COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   -U "$DB_USER" -d "$DB_NAME" < "$DUMP_PATH"
 RESTORE_RC=$?
 set -e
-if [[ "$RESTORE_RC" -gt 1 ]]; then
+if [[ "$RESTORE_RC" -ne 0 ]]; then
   echo "error: pg_restore failed with exit $RESTORE_RC" >&2
-  COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
-    DB_PORT="$DB_PORT" \
-    EVAL_DB_USER="$DB_USER" \
-    EVAL_DB_PASS="$DB_PASS" \
-    EVAL_DB_NAME="$DB_NAME" \
-    docker compose -f "$COMPOSE_FILE" down -v >&2 || true
-  rm -rf "$STATE_DIR"
   exit 1
 fi
 
@@ -207,7 +209,7 @@ COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT" \
   EVAL_DB_PASS="$DB_PASS" \
   EVAL_DB_NAME="$DB_NAME" \
   docker compose -f "$COMPOSE_FILE" exec -T db \
-  psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 <<SQL >/dev/null
+  psql -U "$DB_USER" -d "$DB_NAME" -v target_db="$DB_NAME" -v ON_ERROR_STOP=1 <<SQL >/dev/null
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${RO_USER}') THEN
@@ -217,40 +219,15 @@ BEGIN
   END IF;
 END
 \$\$;
-GRANT CONNECT ON DATABASE ${DB_NAME} TO ${RO_USER};
+GRANT CONNECT ON DATABASE :"target_db" TO ${RO_USER};
 GRANT USAGE ON SCHEMA public TO ${RO_USER};
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${RO_USER};
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO ${RO_USER};
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${RO_USER};
 SQL
 
-SUPERUSER_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:${DB_PORT}/${DB_NAME}"
-DATABASE_URL="postgresql://${RO_USER}:${RO_PASS}@localhost:${DB_PORT}/${DB_NAME}"
-EVAL_SIDECAR_URL="postgresql://${RO_USER}:${RO_PASS}@host.docker.internal:${DB_PORT}/${DB_NAME}"
+export SESSION_ID COMPOSE_PROJECT DB_PORT S3_URI DUMP_PATH STATE_DIR STATE_FILE COMPOSE_FILE MCP_ENV_FILE DB_NAME
+python3 "$SCRIPT_DIR/state.py" create
 
-cat > "$MCP_ENV_FILE" <<EOF
-SESSION_ID=${SESSION_ID}
-EVAL_SIDECAR_URL=${EVAL_SIDECAR_URL}
-EOF
-
-cat > "$STATE_FILE" <<EOF
-SESSION_ID=${SESSION_ID}
-COMPOSE_PROJECT=${COMPOSE_PROJECT}
-DB_PORT=${DB_PORT}
-DATABASE_URL=${DATABASE_URL}
-SUPERUSER_URL=${SUPERUSER_URL}
-EVAL_SIDECAR_URL=${EVAL_SIDECAR_URL}
-MCP_ENV_FILE=${MCP_ENV_FILE}
-S3_URI=${S3_URI}
-DUMP_PATH=${DUMP_PATH}
-STATE_DIR=${STATE_DIR}
-STATE_FILE=${STATE_FILE}
-COMPOSE_FILE=${COMPOSE_FILE}
-CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-EOF
-
-echo "[mount-production-db] ready. Prefer DATABASE_URL (eval_ro). Teardown: bash $SCRIPT_DIR/teardown.sh ${SESSION_ID}" >&2
-echo "[mount-production-db] postgres MCP check: bash $SCRIPT_DIR/postgres-mcp.sh --check" >&2
-echo "[mount-production-db] reconnect only the postgres MCP server after the check passes" >&2
-echo ""
-cat "$STATE_FILE"
+echo "[mount-production-db] ready. Teardown: bash $SCRIPT_DIR/teardown.sh ${SESSION_ID}" >&2
+echo "[mount-production-db] optional MCP check: bash $SCRIPT_DIR/postgres-mcp.sh --check" >&2

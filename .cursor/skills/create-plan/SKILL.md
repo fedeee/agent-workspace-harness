@@ -56,8 +56,8 @@ ledger is for the product in this git tree.
   Either respect the decision, or state what new evidence overturns it. Never
   silently re-propose an invalidated direction — that is the failure this file
   exists to prevent.
-- Entries marked **open** are fair game. Entries marked **drifted** must be
-  verified against the code before you rely on them.
+- Entries marked **open** are fair game. Entries marked **reversed** state
+  the current decision. Read their history before you rely on them.
 - If the plan settles something new, note it — Step 7 records it.
 
 ### 4. Gather Context
@@ -153,8 +153,10 @@ Before finishing, verify the plan:
 
 If the plan rules an approach out — or reverses an existing entry — append it to
 `_plans/DECISIONS.md` using the next free ID in the relevant section. One entry
-per decision: the claim as a heading, then **Status**, **Why**, and a link back
-to this plan. Never renumber existing entries.
+per decision: the claim as a heading, then **Status**, **Scope**, **Was**, **Evidence**,
+**Decision**, and **Reconsider when**. Link this plan and the supporting evidence.
+Keep the entry open if the plan has no supporting test or observed result.
+Never renumber existing entries.
 
 Only record directions that product work considered and rejected. A list of
 everything not built is noise; the ledger is for things someone would otherwise
@@ -185,3 +187,11 @@ Tell the user:
   as format only. Dated plans are product work. Do not add a dated plan
   for a harness-internal design debate.
 - Review the plan with the user before they run `/implement-plan`
+
+## Decision evidence
+
+When you read a decision, check its scope, evidence, and reconsideration condition.
+Apply it only within that scope. A missing evidence field does not justify invented support.
+When you append a decision, include Status, Scope, Was, Evidence, Decision, and Reconsider when.
+Keep unsupported hypotheses open. Preserve prior evidence when a decision reverses.
+Use durable test, cycle, issue, or commit references. Follow `_plans/DECISIONS.md` for the entry format.

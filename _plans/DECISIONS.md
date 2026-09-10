@@ -30,3 +30,15 @@ renumber. Create the section if it does not exist.
 
 Record a direction the product work considered and rejected. A list of
 everything not built is noise.
+
+Each entry must include:
+
+- **Status**: open, settled, or reversed.
+- **Scope**: affected subsystem, versions, data, and conditions. Avoid universal claims from one test.
+- **Was**: the approach tested or previously adopted.
+- **Evidence**: a durable test, cycle, issue, or commit reference and the observed result.
+- **Decision**: what the evidence rules out within that scope.
+- **Reconsider when**: a specific change or new evidence that justifies another test.
+
+Use **open** if evidence is missing. Do not invent results or links.
+For a reversal, preserve prior evidence and add the date, new evidence, and current decision.

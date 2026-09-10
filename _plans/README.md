@@ -114,6 +114,18 @@ skills, and `.claude/prompt-snippets/`.
 - **Never renumber.** A reversed entry keeps its ID, changes status to
   `reversed`, and states the current answer in the claim.
 
+Each entry must include:
+
+- **Status**: open, settled, or reversed.
+- **Scope**: affected subsystem, versions, data, and conditions. Avoid universal claims from one test.
+- **Was**: the approach tested or previously adopted.
+- **Evidence**: a durable test, cycle, issue, or commit reference and the observed result.
+- **Decision**: what the evidence rules out within that scope.
+- **Reconsider when**: a specific change or new evidence that justifies another test.
+
+Use **open** if evidence is missing. Do not invent results or links.
+For a reversal, preserve prior evidence and add the date, new evidence, and current decision.
+
 Plans are long and each one is read for its own work. The ledger is the one file
 read *before* the work, which is why it exists separately.
 

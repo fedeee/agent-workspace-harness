@@ -2,7 +2,7 @@
 
 Operator cycle files for offline evaluation and pipeline debugging. One file per cycle.
 
-The loop measures a mounted dump. It does not write the dump.
+The loop measures frozen files or a temporary database copy. It does not write the database.
 The operator applies a kept change in this git tree.
 
 The loop supports two workflows:
@@ -72,12 +72,17 @@ Do not implement the change until a cycle keeps it.
 
 ## How to run a cycle
 
-1. Confirm `/mount-production-db` is up. Postgres MCP user is `eval_ro`.
-2. Tell the agent `/eval-loop H1` (or the id you want to test).
-3. Read this folder's latest `NNN-*.md`, or `EXAMPLE.cycle.md` on the first run.
-4. Follow `.claude/skills/eval-loop/SKILL.md` (Cursor mirror is identical).
-5. Copy `CYCLE.md` to the next `NNN-<slug>.md` and fill it.
-6. Stop after one cycle unless the user says continue.
+Choose classifier or pipeline evaluation from the question.
+Frozen files need no database, Docker, or MCP.
+For a database question, prepare a temporary copy through `/mount-production-db`.
+Use MCP, psql, or the product eval command. Clean up a copy this workflow created.
+
+1. Read live decisions and choose one hypothesis.
+2. Freeze the input and record the metric before the test.
+3. Run baseline and candidate against the same input.
+4. Record results with `scripts/eval_score.py`.
+5. Copy CYCLE.md, link the report and its hashes, and update the backlog.
+6. Stop after one cycle. Keep the database lifecycle within the user's evaluation request.
 
 ## Qualified row
 
@@ -92,8 +97,8 @@ These are classification error rates. They are not data leakage
 
 | Name in this repo | Standard term | Formula |
 |---|---|---|
-| Precision error (also: precision leak) | False positive rate on qualified rows | out_class on qualified / labelled_qualified |
-| Recall error (also: recall leak) | False negative rate on excluded rows | in_class on excluded / labelled_excluded |
+| Precision error (also: precision leak) | False discovery rate (1 - precision) | out_class on qualified / labelled_qualified |
+| Recall error (also: recall leak) | False omission rate | in_class on excluded / labelled_excluded |
 
 `in_class` means "in the target class". `out_class` means "not in the
 target class". Keep these two gold values. Keep the two error rates.
@@ -103,6 +108,7 @@ target class". Keep these two gold values. Keep the two error rates.
 - `labelled_*` ignores `unsure`.
 
 Keep a change if precision error drops and recall error does not rise.
+The legacy name `recall error` measures excluded rows; it does not mean `1 - recall`.
 
 ## Minimum gold set
 
@@ -116,8 +122,7 @@ A header-only `GOLD.csv` is not valid for `/eval-loop`. Do not score
 
 ## Harvest the next labeling candidates
 
-Mount the sidecar first. Source the session `state.env` (or the MCP
-pointer plus `localhost` in place of `host.docker.internal`). Refuse
+Mount the sidecar first. Read DATABASE_URL from state.json with state.py get. Refuse
 ports 5432 and 5433. The user must be `eval_ro`.
 
 Pass a query that prints CSV with the `GOLD.csv` headers:
@@ -129,3 +134,66 @@ psql "$DATABASE_URL" -c '\copy (YOUR_QUERY) to stdout csv header' \
 
 Review candidates in a separate file. Do not append them during an active
 eval cycle. After review, append a new cohort and update `_eval/GOLD.md`.
+
+## Reproducible classifier scoring
+
+The scorer uses only the Python standard library. It does not call a model or access a database.
+Use the live GOLD.csv. Each row needs `slice_id,id,gold`; IDs must be unique within each slice.
+At least 20 labels must be `in_class` or `out_class`. `unsure` does not count.
+Export baseline and candidate predictions separately with `slice_id,id,bucket`.
+Each file must contain exactly the gold IDs. Bucket is `qualified` or `excluded`.
+The scorer recomputes counts from each prediction file. It ignores any old bucket in GOLD.csv.
+
+Create a configuration file with settings for both runs:
+
+```json
+{
+  "baseline": {"code_revision": "BASE_COMMIT", "model": "MODEL_ID", "prompt_sha256": "HASH", "seed": null},
+  "candidate": {"code_revision": "CANDIDATE_COMMIT", "model": "MODEL_ID", "prompt_sha256": "HASH", "seed": null}
+}
+```
+
+Use null for a deterministic classifier's model. Include runtime and sampling parameters when applicable.
+Do not include credentials. Describe commands with secret environment-variable names, not their values.
+
+```bash
+python3 scripts/eval_score.py validate --gold _eval/GOLD.csv
+python3 scripts/eval_score.py classifier --gold _eval/GOLD.csv \
+  --baseline _scratch/eval-loop/baseline.csv --candidate _scratch/eval-loop/candidate.csv \
+  --config _scratch/eval-loop/config.json \
+  --command 'BASELINE_COMMAND; CANDIDATE_COMMAND' --out _scratch/eval-loop/result.json
+```
+
+Both runs need labelled qualified and excluded rows. Invalid inputs exit with status 2.
+A valid report exits with status 0 for either keep or kill. Read the verdict in the report.
+Comparison uses exact fractions. Displayed numbers are rounded floats.
+Twenty labels are a minimum guard, not a statistical confidence claim.
+
+## Pipeline results
+
+Pipeline evaluation requires frozen inputs, a baseline, a declared target, and a new-error count.
+It does not require classifier labels. Measure the results with the product's command or read-only SQL.
+Save a measurements JSON file:
+
+```json
+{"metric": "recovered_rows", "baseline": 40, "candidate": 65, "target": 60, "direction": "higher", "new_errors": 0}
+```
+
+Use `lower` for metrics such as latency. A keep requires improvement, the target, and zero new errors.
+The config file needs baseline and candidate code revisions and relevant runtime settings.
+
+```bash
+python3 scripts/eval_score.py pipeline --data _scratch/eval-loop/frozen-input.csv \
+  --measurements _scratch/eval-loop/measurements.json --config _scratch/eval-loop/config.json \
+  --command 'BASELINE_COMMAND; CANDIDATE_COMMAND' --out _scratch/eval-loop/pipeline-result.json
+```
+
+## Evidence in each report
+
+Reports contain input and prediction SHA-256 hashes, baseline/candidate configuration, and the supplied exact commands.
+They also contain the current Git revision, dirty diff hash, untracked file hashes, and scorer hash.
+The recorder never executes the supplied commands. Record their real invocations after the evaluation.
+For an uncommitted run, preserve its patch with the evidence. A hash alone cannot reconstruct missing code or data.
+Keep input snapshots and sanitized reports with the cycle or in durable artifact storage.
+Raw local files under `_scratch/` are ignored by Git; link durable copies before a settled decision.
+Existing report files are never overwritten.

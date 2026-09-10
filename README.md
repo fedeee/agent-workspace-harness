@@ -27,7 +27,7 @@ This harness adds three durable layers to your repository:
 
 ## Who's this for
 
-The Agent Workspace Harness is built specifically for software engineers, data scientists, and technical founders who use AI coding agents (like Claude or Cursor) to build, refactor, or maintain data-intensive systems, search pipelines, and classification logic.
+The Agent Workspace Harness is built specifically for software engineers, data scientists, and technical founders who use AI coding agents (like Codex, Claude Code, or Cursor) to build, refactor, or maintain data-intensive systems, search pipelines, and classification logic.
 
 It provides a lightweight, local operating system for working with AI coding agents. Rather than running a heavyweight external control plane, it relies on files in the repo to keep agents aligned, prevent repeated mistakes, and coordinate parallel execution.
 
@@ -81,7 +81,10 @@ The eval loop handles two tasks:
 - **Pipeline and platform debugging**: Diagnose crawl errors, rate limits (HTTP 429), timeouts, and system bottlenecks. Test a fix against dump error distributions with a target recovery metric.
 - **Classifier evaluation**: Measure precision error and recall error on a frozen gold set in [`_eval/GOLD.csv`](_eval/GOLD.csv).
 
-Setup:
+For database evaluation, the agent prepares a temporary copy, connects, evaluates, and cleans up.
+MCP is optional. Frozen-file evaluation skips database setup.
+
+Database setup:
 
 1. Copy `_local/eval.env.example` to `_local/eval.env`. Fill the dump fields.
 2. Run `/mount-production-db` to restore the dump into the local sidecar.
@@ -106,20 +109,113 @@ Keep rules:
 Do not score `GOLD.example.csv`.
 See [`_eval/README.md`](_eval/README.md) for metrics and other commands.
 
+Use `scripts/eval_score.py` to validate labels and record reproducible classifier or pipeline results.
+See [formats and commands](_eval/README.md#reproducible-classifier-scoring).
+Each settled decision needs scope, evidence, and a condition for reconsideration.
+
 ## Workspace layout
 
 ```
 .
 ├── CLAUDE.md                 # Primary system instructions for agents
-├── AGENTS.md                 # IDE entry point (Cursor / Copilot)
+├── AGENTS.md                 # Entry point (Codex / Cursor / Copilot)
 ├── _plans/                   # Specs + negative ADR ledger
 ├── _eval/                    # Eval protocol, cycles, gold schemas
 ├── _local/                   # Machine defaults (eval.env is gitignored)
+├── install.sh                # One-line installer. Clones, then runs adopt
+├── scripts/adopt.sh          # Copy this harness into an existing repo
 ├── scripts/worktree_agent.sh # Isolated git worktrees of this tree
 ├── .cursor/hooks.json        # Blocks git push, ssh, commit --no-verify
-├── .claude/ / .cursor/ / .github /
+├── .agents/skills/           # Codex skills (mirror of .claude/skills/)
+├── .codex/                   # Codex MCP config and shell hooks
+├── .claude/ / .cursor/ / .github/
 └── .mcp.json                 # Shared MCP tool definitions
 ```
+
+## Adopt into an existing repo
+
+Copy this harness into an app repository. Do not clone the app into this tree.
+
+Codex, Cursor, Claude Code, and GitHub Copilot are supported.
+
+One line, from inside your app repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/fedeee/agent-workspace-harness/main/install.sh | bash
+```
+
+This clones the harness into a temp directory and runs `scripts/adopt.sh`
+against the current directory. You pipe a script to bash. Read it first
+with `curl -fsSL <url>`.
+
+Or clone this repo once and run the CLI yourself:
+
+```bash
+bash /path/to/coding_harness_repo/scripts/adopt.sh /path/to/your-app
+```
+
+The CLI needs Bash and Git. MCP and existing hook merges need `jq`.
+Codex MCP merges also need Python 3.11 or newer.
+Set `HARNESS_PYTHON=/path/to/python3.11` if `python3` is older.
+
+The CLI detects Codex, Cursor, Claude Code, and GitHub Copilot files in the
+target repo. It then asks:
+
+1. Which agents to install for.
+2. Whether to copy the eval loop.
+3. Whether to copy the Postgres sidecar.
+4. Whether to install MCP servers.
+5. Whether to install the deny-push hook.
+
+It copies matching skills and rules. It does not overwrite
+`_plans/DECISIONS.md`. If `CLAUDE.md` or `AGENTS.md` already exist, it
+appends a short harness section.
+
+Non-interactive example (Cursor only, no eval, no hook):
+
+```bash
+bash /path/to/coding_harness_repo/scripts/adopt.sh /path/to/your-app \
+  --yes --agents cursor --no-eval --no-sidecar --no-mcp --no-hooks
+```
+
+Do not copy this template `README.md` over the app README.
+
+## Codex
+
+Install the core negative memory harness:
+
+```bash
+bash scripts/adopt.sh /path/to/your-app --yes --agents codex
+```
+
+Add `--eval`, `--sidecar`, `--mcp`, and `--hooks` as needed.
+Existing instructions, decisions, MCP server entries, and hook settings stay intact.
+The shared source remains under `.claude/`; Codex does not need Claude Code installed.
+
+Codex reads `AGENTS.md`. Skills live in `.agents/skills/`.
+Use `$create-plan`, `$implement-plan`, `$eval-loop`, or `$commit` in Codex.
+The slash commands below name the same skills in Cursor and Claude Code.
+See the [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
+
+Codex uses `.codex/config.toml` for project MCP servers.
+Trust the repository to load project config. Restart Codex after installation.
+See the [official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+With `--hooks`, Codex uses `.codex/hooks.json` for the shared shell guard.
+Review and trust the hook through `/hooks` before it runs.
+See the [official hook documentation](https://learn.chatgpt.com/docs/hooks).
+Hooks guard common commands. They do not inspect every script or replace a sandbox.
+Copilot follows the written prohibition; this harness does not install a Copilot shell hook.
+
+## Checks
+
+```bash
+bash tests/test_adopt.sh
+python3 -m unittest discover -s tests -p 'test_*.py'
+```
+
+Use Python 3.11+ for TOML merge tests. Tests use temporary repos and mock commands.
+They do not fetch dumps or run the eval loop.
 
 ## Quickstart
 
@@ -142,6 +238,7 @@ Label at least 20 gold rows before classifier `/eval-loop`.
 | `/eval-loop`             | One observe → hypothesize → test → keep/kill cycle.                                      |
 | `/eval-loop H1`          | Test hypothesis `H1` this cycle.                                                         |
 | `/commit`                | Stage and commit this repo. Agents never run `git push`.  |
+| `scripts/adopt.sh`       | Copy this harness into an existing git repository.        |
 
 A hook also blocks `git push`, `ssh`, and `git commit --no-verify`.
 
@@ -159,14 +256,16 @@ commands. Most other rules live in markdown and skills.
 
 | Path                                  | Role                                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `.cursor/hooks/deny-shell.py`         | Deny `git push`, `ssh`, and `git commit --no-verify`. Cursor and Claude Code both run this script.                              |
+| `.cursor/hooks/deny-shell.py`         | Deny `git push`, `ssh`, and `git commit --no-verify`. Cursor, Claude Code, and Codex run this script.                              |
+| `scripts/adopt.sh`                    | Copy this harness into an existing git repository. Asks which agents to install.        |
+| `install.sh`                          | One-line installer. Clones this repo into a temp directory, then runs `scripts/adopt.sh`. |
 | `scripts/worktree_agent.sh`           | Isolated git worktree of this tree. No `repos/` name. Copies `_local/eval.env` when it exists.                                  |
-| `.claude/skills/mount-production-db/` | Docker Postgres sidecar: fetch the S3 dump, create `eval_ro`, tear down. Keep the Cursor mirror in `.cursor/skills/` identical. |
+| `.claude/skills/mount-production-db/` | Docker Postgres sidecar: fetch the S3 dump, create `eval_ro`, tear down. Keep `.cursor/skills/` and `.agents/skills/` mirrors identical. |
 
 ## MCP servers
 
 Shared configuration in `.mcp.json`, `.cursor/mcp.json`, and
-`.vscode/mcp.json`:
+`.vscode/mcp.json`, and `.codex/config.toml`:
 
 | Server                                                    | Purpose                                        |
 | --------------------------------------------------------- | ---------------------------------------------- |

@@ -68,8 +68,8 @@ These are classification error rates. They are not data leakage.
 
 | Name in this repo | Standard term | Formula |
 |---|---|---|
-| Precision error (also: precision leak) | False positive rate on qualified rows | out_class on qualified / labelled_qualified |
-| Recall error (also: recall leak) | False negative rate on excluded rows | in_class on excluded / labelled_excluded |
+| Precision error (also: precision leak) | False discovery rate (1 - precision) | out_class on qualified / labelled_qualified |
+| Recall error (also: recall leak) | False omission rate | in_class on excluded / labelled_excluded |
 
 `labelled_*` ignores `unsure`. Recalculate from `GOLD.csv`.
 

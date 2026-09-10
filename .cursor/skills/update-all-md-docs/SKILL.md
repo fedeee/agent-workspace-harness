@@ -11,8 +11,8 @@ accurate and consistent with the current state of the project.
 ## Scope
 
 - **Include**: All `*.md` files in the root and its subdirectories
-  (`.claude/`, `.cursor/`, `.github/`, `_eval/`, `_plans/`, `_local/`)
-- **Keep `.claude/skills/` and `.cursor/skills/` identical**
+  (`.claude/`, `.cursor/`, `.agents/`, `.codex/`, `.github/`, `_eval/`, `_plans/`, `_local/`)
+- **Keep `.claude/skills/`, `.cursor/skills/`, and `.agents/skills/` identical**
 
 ## Steps
 
@@ -34,7 +34,7 @@ accurate and consistent with the current state of the project.
 3. **Update each file** to reflect the current state:
    - Sync the file tree in README.md with the actual directory structure
    - Ensure MCP server tables match `.mcp.json`, `.vscode/mcp.json`, and
-     `.cursor/mcp.json`
+     `.cursor/mcp.json`, and `.codex/config.toml`
    - Ensure skill/agent/rule references are complete and accurate
    - Keep the existing tone and structure of each file — don't rewrite from scratch
 

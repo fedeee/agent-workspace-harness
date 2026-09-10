@@ -174,7 +174,7 @@ After the suite is green, review the diff from the base commit recorded
 in `## Waves`:
 
 1. Run the review subagent your tool provides. In Cursor that is the
-   Bugbot subagent. In Claude Code spawn a reviewer subagent with the
+   Bugbot subagent. In Claude Code or Codex, spawn a reviewer subagent with the
    diff and the plan. If no review subagent exists, read the diff
    yourself against the plan's steps.
 2. Fix a finding the review substantiates. Add each fix as a checked
@@ -267,3 +267,11 @@ When all steps pass and tests are green:
 - Decisions that rule an approach *out* also go in `_plans/DECISIONS.md` — the
   plan records what happened, the ledger is what gets read before the next plan
 - When complete, the plan serves as a record of what happened — useful for code reviews and future reference
+
+## Decision evidence
+
+When you read a decision, check its scope, evidence, and reconsideration condition.
+Apply it only within that scope. A missing evidence field does not justify invented support.
+When you append a decision, include Status, Scope, Was, Evidence, Decision, and Reconsider when.
+Keep unsupported hypotheses open. Preserve prior evidence when a decision reverses.
+Use durable test, cycle, issue, or commit references. Follow `_plans/DECISIONS.md` for the entry format.

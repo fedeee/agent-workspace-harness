@@ -9,6 +9,7 @@ Humans start at [README.md](./README.md).
 Short version:
 
 - One git repository. Do not add a `repos/` clone manager.
+- Copy into an existing repo: `bash scripts/adopt.sh <path>`.
 - Never `git push`. Never open SSH. A hook blocks `git push`, `ssh`,
   and `git commit --no-verify`.
 - Isolated worktrees: `scripts/worktree_agent.sh <branch>`.
@@ -17,7 +18,7 @@ Short version:
 - Do not record harness-internal planning in `_plans/` or
   `DECISIONS.md`. Standing harness rules live in `CLAUDE.md` and skills.
 - Score `_eval/GOLD.csv`. Do not score `GOLD.example.csv`.
-- Do not run `/eval-loop` until `GOLD.csv` has at least 20 labelled
+- Do not run classifier `/eval-loop` until `GOLD.csv` has at least 20 labelled
   rows (`in_class` or `out_class`). `unsure` does not count.
 - One eval hypothesis per cycle. Keep only if precision error drops
   and recall error does not rise.
@@ -30,4 +31,6 @@ Short version:
   Do not add a DAG scheduler, a knowledge graph, a message queue, or
   extra machines from a skill.
 
-Skills live in `.claude/skills/` and are mirrored under `.cursor/skills/`.
+Skills live in `.claude/skills/`. Mirrors: `.cursor/skills/` and `.agents/skills/` (Codex).
+In Codex, invoke skills with `$create-plan`, `$implement-plan`, or `$eval-loop`.
+Read the linked prompt snippets in `CLAUDE.md`; Codex does not expand Claude `@` imports.

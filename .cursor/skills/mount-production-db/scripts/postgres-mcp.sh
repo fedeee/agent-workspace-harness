@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Start crystaldba/postgres-mcp against the mounted sidecar only.
-# Reads /tmp/eval-sidecar-mcp.env (written by mount.sh).
+# Reads /tmp/eval-sidecar-mcp.json (written by mount.sh).
 set -euo pipefail
 
-POINTER="${EVAL_MCP_ENV:-/tmp/eval-sidecar-mcp.env}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+POINTER="${EVAL_MCP_ENV:-/tmp/eval-sidecar-mcp.json}"
 URI="${EVAL_SIDECAR_URL:-}"
 MODE="${1:-serve}"
 SESSION_ID=""
@@ -24,7 +26,7 @@ fail() {
 
 read_pointer_value() {
   local key="$1"
-  awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); print; exit}' "$POINTER"
+  python3 "$SCRIPT_DIR/state.py" get "$POINTER" "$key"
 }
 
 if [[ "$MODE" != "serve" && "$MODE" != "--check" ]]; then
@@ -52,10 +54,11 @@ if [[ -z "$URI" ]]; then
   [[ "$SESSION_ID" =~ ^[[:alnum:]-]+$ ]] ||
     fail "pointer_invalid" "sidecar pointer has an invalid SESSION_ID: $POINTER"
 
-  STATE_FILE="/tmp/eval-sidecar-${SESSION_ID}/state.env"
+  STATE_FILE="/tmp/eval-sidecar-${SESSION_ID}/state.json"
+  [[ -e "$STATE_FILE" ]] || STATE_FILE="/tmp/eval-sidecar-${SESSION_ID}/state.env"
   [[ -r "$STATE_FILE" ]] ||
     fail "pointer_stale" "sidecar state is missing; remount or remove stale pointer: $POINTER"
-  STATE_URI="$(awk -F= '$1 == "EVAL_SIDECAR_URL" {sub(/^[^=]*=/, ""); print; exit}' "$STATE_FILE")"
+  STATE_URI="$(python3 "$SCRIPT_DIR/state.py" get "$STATE_FILE" EVAL_SIDECAR_URL)"
   [[ "$STATE_URI" == "$URI" ]] ||
     fail "pointer_stale" "sidecar pointer does not match session state: $STATE_FILE"
 fi
@@ -80,6 +83,10 @@ PY
 IFS='|' read -r DB_USER DB_HOST DB_PORT DB_NAME <<< "$PARSED"
 [[ "$DB_USER" == "eval_ro" ]] ||
   fail "unsafe_user" "postgres MCP requires the read-only eval_ro role"
+case "$DB_HOST" in
+  localhost|127.0.0.1|host.docker.internal) ;;
+  *) fail "unsafe_host" "postgres MCP requires a local sidecar host" ;;
+esac
 [[ "$DB_PORT" != "5432" && "$DB_PORT" != "5433" ]] ||
   fail "unsafe_port" "refusing the live local database port: $DB_PORT"
 
@@ -110,11 +117,27 @@ if [[ "$MODE" == "--check" ]]; then
   exit 0
 fi
 
-URI="${URI//localhost/host.docker.internal}"
-URI="${URI//127.0.0.1/host.docker.internal}"
+# Linux host networking can reach a loopback-only database bind.
+NETWORK_ARGS=(--add-host=host.docker.internal:host-gateway)
+MCP_HOST=host.docker.internal
+if [[ "$(uname -s)" == Linux ]]; then
+  NETWORK_ARGS=(--network host)
+  MCP_HOST=127.0.0.1
+fi
+URI="$(URI_TO_PARSE="$URI" MCP_HOST="$MCP_HOST" python3 - <<'PYURI'
+import os
+from urllib.parse import urlparse
+
+parsed = urlparse(os.environ["URI_TO_PARSE"])
+if parsed.hostname in {"localhost", "127.0.0.1", "host.docker.internal"}:
+    credentials = parsed.netloc.rsplit("@", 1)[0]
+    parsed = parsed._replace(netloc=f"{credentials}@{os.environ['MCP_HOST']}:{parsed.port}")
+print(parsed.geturl())
+PYURI
+)"
 
 exec docker run -i --rm \
-  --add-host=host.docker.internal:host-gateway \
+  "${NETWORK_ARGS[@]}" \
   -e "DATABASE_URI=${URI}" \
   crystaldba/postgres-mcp:latest \
   --access-mode=restricted

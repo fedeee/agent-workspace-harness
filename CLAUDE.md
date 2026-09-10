@@ -9,7 +9,14 @@ a clone manager for other remotes. Do not add a `repos/` layer.
 ## This Workspace
 
 One git repository. Put product code in this tree, or copy these harness
-files into an existing app repo.
+files into an existing app repo:
+
+```bash
+bash scripts/adopt.sh /path/to/your-app
+```
+
+The CLI asks which agents the target repo uses: Cursor, Claude Code,
+GitHub Copilot, or Codex. It then copies matching files.
 
 ### Git Push / SSH — Forbidden
 
@@ -18,7 +25,9 @@ stay local. Report them as ready to push.
 
 A project hook blocks `git push`, `ssh`, and `git commit --no-verify`.
 Cursor reads `.cursor/hooks.json`. Claude Code reads `.claude/settings.json`.
-Both run `.cursor/hooks/deny-shell.py`.
+Codex reads `.codex/hooks.json`. All three run `.cursor/hooks/deny-shell.py`.
+Codex requires project trust and hook review through `/hooks`.
+Hooks guard common shell commands. They are not a complete security boundary.
 
 ### Worktrees
 
@@ -61,9 +70,11 @@ only.
 Git ignores `_local/eval.env` only (sidecar secrets).
 
 Score `_eval/GOLD.csv` when it exists. Do not score `GOLD.example.csv`.
-Do not run `/eval-loop` until that file has at least 20 labelled rows
+Do not run classifier `/eval-loop` until that file has at least 20 labelled rows
 (`in_class` or `out_class`). `unsure` does not count.
 
+Pipeline evaluation needs frozen inputs and a declared metric, not classifier labels.
+File evaluation needs no database or MCP.
 See `_plans/README.md` and `_eval/README.md`.
 
 ### Postgres MCP — expected failure
@@ -105,7 +116,7 @@ two agentic features. If an instruction is only used once, inline it.
 
 ## Agentic Configuration Sync
 
-Keep Claude Code, Cursor, and GitHub Copilot in sync:
+Keep Claude Code, Cursor, GitHub Copilot, and Codex in sync:
 
 | What         | Claude Code              | Cursor                     | GitHub Copilot                    |
 | ------------ | ------------------------ | -------------------------- | --------------------------------- |
@@ -115,13 +126,17 @@ Keep Claude Code, Cursor, and GitHub Copilot in sync:
 | Hooks        | `.claude/settings.json`  | `.cursor/hooks.json`       | —                                 |
 | Instructions | `CLAUDE.md`              | `AGENTS.md`                | `.github/copilot-instructions.md` |
 
+Codex uses `AGENTS.md`, `.agents/skills/`, `.codex/config.toml`, and `.codex/hooks.json`.
+Use `$create-plan` and `$implement-plan` in Codex. The skill steps are shared.
+Read linked prompt snippets explicitly; Claude `@` imports do not apply in Codex.
+
 1. Any MCP server added to `.mcp.json` must also go in `.vscode/mcp.json`
-   and `.cursor/mcp.json`.
+   and `.cursor/mcp.json`. Keep `.codex/config.toml` server values in sync.
 2. Edit a skill in `.claude/skills/` first, then copy it to
-   `.cursor/skills/`. The two trees must match.
+   `.cursor/skills/` and `.agents/skills/`. All three trees must match.
 3. Shared standards must stay consistent across tools.
-4. Shell deny hooks: keep `.cursor/hooks.json` and `.claude/settings.json`
-   pointed at the same script.
+4. Shell deny hooks: keep `.cursor/hooks.json`, `.claude/settings.json`, and
+   `.codex/hooks.json` pointed at the same script.
 
 ## Self-Improvement
 

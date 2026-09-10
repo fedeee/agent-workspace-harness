@@ -14,12 +14,16 @@ in `_plans/` or `_plans/DECISIONS.md`. Standing harness rules live in
 `CLAUDE.md`, skills, and `.claude/prompt-snippets/`.
 
 Do not add a `repos/` clone manager. Put product code in this tree,
-or copy these harness files into an existing app repo.
+or copy these harness files into an existing app repo:
+
+```
+bash scripts/adopt.sh /path/to/your-app
+```
 
 ## Skills
 
 Workspace skills live in `.claude/skills/` and are mirrored under
-`.cursor/skills/`. Keep the two trees identical.
+`.cursor/skills/` and `.agents/skills/` (Codex). Keep all three trees identical.
 
 Harness skills:
 
@@ -39,7 +43,7 @@ Harness skills:
 - Ignore Postgres MCP connection failures unless the user asked for
   `/eval-loop`, `/mount-production-db`, or sidecar SQL. Do not edit `.mcp.json`
   to hide that error.
-- Do not run `/eval-loop` until `_eval/GOLD.csv` has at least 20
+- Do not run classifier `/eval-loop` until `_eval/GOLD.csv` has at least 20
   labelled rows (`in_class` or `out_class`).
 
 ## Session execution

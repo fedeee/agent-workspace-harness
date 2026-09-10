@@ -9,7 +9,17 @@ verdict: keep | kill | need-labels | baseline
 
 # Cycle NNN — <short slug>
 
-## Dump
+## Workflow and evidence
+
+- **Workflow**: classifier | pipeline
+- **Input snapshot and SHA-256**:
+- **Result report and SHA-256**:
+- **Baseline and candidate code revisions**:
+- **Model/runtime config and prompt hashes**:
+- **Exact commands**:
+- **Dirty patch or durable artifact location**:
+
+## Dump (database workflows only)
 
 - **URI**:
 - **Sidecar port**:
@@ -44,10 +54,13 @@ Command or query:
 
 ## Result vs baseline
 
+Use the rows for the chosen workflow. Remove unrelated metric rows.
+
 | Metric | Baseline | This cycle | Delta |
 |--------|----------|------------|-------|
 | precision error | | | |
-| recall error | | | |
+| false omission rate (classifier) | | | |
+| declared pipeline metric (pipeline) | | | |
 
 ## Verdict
 

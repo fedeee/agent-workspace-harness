@@ -70,6 +70,10 @@ WORKTREE_PATH="$WORKTREE_ROOT/${REPO_NAME}-${BRANCH_SLUG}"
 if [[ "$MODE" == "clean" ]]; then
   [[ -e "$WORKTREE_PATH" ]] ||
     fail "worktree path does not exist: $WORKTREE_PATH"
+  actual_branch="$(git -C "$WORKTREE_PATH" symbolic-ref --quiet --short HEAD)" ||
+    fail "worktree has a detached HEAD: $WORKTREE_PATH"
+  [[ "$actual_branch" == "$BRANCH" ]] ||
+    fail "worktree belongs to $actual_branch, not $BRANCH"
   git -C "$MAIN_ROOT" worktree remove "$WORKTREE_PATH"
   git -C "$MAIN_ROOT" worktree prune
   printf 'Removed worktree: %s\n' "$WORKTREE_PATH"

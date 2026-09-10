@@ -56,12 +56,13 @@ The mount script creates role `eval_ro` and exports that URL — prefer it.
 ### Postgres MCP
 
 The `postgres` MCP server runs `.claude/skills/mount-production-db/scripts/postgres-mcp.sh`.
-That script reads `/tmp/eval-sidecar-mcp.env` (written by `mount.sh`).
+That script reads `/tmp/eval-sidecar-mcp.json` (written by `mount.sh`).
 It starts `crystaldba/postgres-mcp` in `--access-mode=restricted`.
 It never uses ports `5432` or `5433`.
 
 Do not export `EVAL_SIDECAR_URL` and expect MCP to pick it up.
 The MCP config does not read a session env var.
+MCP is optional. psql and product eval commands can use the same database copy directly.
 
 After step 2:
 
@@ -132,20 +133,21 @@ The script:
    `COMPOSE_PROJECT_NAME=eval-sidecar-<id>` and a **free host port**
 3. Restores with `pg_restore --no-owner --no-acl --clean --if-exists`
 4. Creates `eval_ro` (SELECT-only)
-5. Prints a `KEY=value` block including `DATABASE_URL`, `EVAL_SIDECAR_URL`,
-   `SESSION_ID`, `STATE_FILE`
-6. Writes `/tmp/eval-sidecar-mcp.env` so postgres MCP can reach the sidecar
+5. Writes private JSON state with read-only URLs and a dump SHA-256 hash.
+   Prints only the session ID, state path, and dump hash. No superuser URL is stored.
+6. Writes `/tmp/eval-sidecar-mcp.json` so postgres MCP can reach the sidecar
 7. Prints the MCP connection-test command
 
-Source the printed env (or read `STATE_FILE`) for later steps. Do **not**
-export into the user's permanent shell profile.
+Read fields from the private JSON state with `state.py get`. Never source state files.
+Do not export credentials into the user's permanent shell profile.
 
 Needs: Docker, AWS CLI (`AWS_PROFILE` from `_local/eval.env`), network for S3.
 
 ### 3. Run the ask
 
 ```bash
-DATABASE_URL="$DATABASE_URL" psql -v ON_ERROR_STOP=1 -c 'SELECT current_user;'
+DATABASE_URL="$(python3 .claude/skills/mount-production-db/scripts/state.py get "$STATE_FILE" DATABASE_URL)"
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT current_user;'
 ```
 
 For free-form questions: write read-only SQL against the dump schema.
@@ -164,7 +166,7 @@ secrets from the DB.
 ```bash
 bash .claude/skills/mount-production-db/scripts/teardown.sh "$SESSION_ID"
 # or:
-bash .claude/skills/mount-production-db/scripts/teardown.sh /tmp/eval-sidecar-<id>/state.env
+bash .claude/skills/mount-production-db/scripts/teardown.sh /tmp/eval-sidecar-<id>/state.json
 ```
 
 Removes compose project, volume, and `/tmp/eval-sidecar-<id>/`.
@@ -191,3 +193,18 @@ bash .claude/skills/mount-production-db/scripts/teardown.sh <session_id>
 /mount-production-db latest
 /eval-loop observe
 ```
+
+## State files
+
+The mount script writes `state.json` inside the private session directory.
+The MCP pointer uses `/tmp/eval-sidecar-mcp.json`. `EVAL_MCP_ENV` can override that path.
+The helper writes files atomically with permissions 0600. It never stores the superuser URL.
+Database names are URL-encoded. SQL uses a quoted database identifier.
+
+```bash
+DATABASE_URL="$(python3 .claude/skills/mount-production-db/scripts/state.py get "$STATE_FILE" DATABASE_URL)"
+psql "$DATABASE_URL" -c 'SELECT current_user, current_database();'
+```
+
+Never source generated state files. The helper can read older assignment files without executing them.
+Teardown accepts a session ID or state path. It uses the bundled Compose file and verifies session paths.

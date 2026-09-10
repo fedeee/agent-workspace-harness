@@ -9,7 +9,7 @@ working_file: GOLD.csv
 # Gold sample
 
 The working file is `_eval/GOLD.csv`. This file has no labelled rows yet.
-Do not run `/eval-loop` until it has at least **20** labelled rows
+Do not run classifier `/eval-loop` until it has at least **20** labelled rows
 (`in_class` or `out_class`). `unsure` does not count. You also need at
 least one labelled qualified row and one labelled excluded row.
 
@@ -48,7 +48,7 @@ These are classification error rates. They are not data leakage.
 
 | Name in this repo | Standard term | Formula |
 |---|---|---|
-| Precision error (also: precision leak) | False positive rate on qualified rows | out_class on qualified / labelled_qualified |
-| Recall error (also: recall leak) | False negative rate on excluded rows | in_class on excluded / labelled_excluded |
+| Precision error (also: precision leak) | False discovery rate (1 - precision) | out_class on qualified / labelled_qualified |
+| Recall error (also: recall leak) | False omission rate | in_class on excluded / labelled_excluded |
 
 `labelled_*` ignores `unsure`. Recalculate from `GOLD.csv`.

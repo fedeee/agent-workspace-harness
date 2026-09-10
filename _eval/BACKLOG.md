@@ -16,14 +16,10 @@ Test an item with `/eval-loop H1`. Example: after you add `H1` as
 
 Or run `/eval-loop` and let the agent pick one open item.
 
-Kill on sight (do not add):
-
-- Hardcoded keyword lists or regexes in engine source
-- Extra user-visible budget dials
-- Shipping a prompt change after a vibe check
-
-See `_plans/DECISIONS.example.md` for why those fail.
-Cite live IDs after you add them to `_plans/DECISIONS.md`.
+Read `_plans/DECISIONS.md` before you propose a hypothesis.
+Cite settled live decisions that apply. State new evidence before a reversal.
+Example decisions show format only. They are not product policy.
+Keep only after measurement meets the eval criteria.
 
 ## Open
 
