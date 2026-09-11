@@ -186,9 +186,90 @@ prompt_line() {
   REPLY_LINE="${REPLY_LINE%"${REPLY_LINE##*[![:space:]]}"}"
 }
 
+use_menu() {
+  [[ -t 0 && -t 1 && "${TERM:-dumb}" != dumb ]]
+}
+
+prompt_menu() {
+  # $1 = single|multiple, $2 = focused index, rest = labels.
+  # MENU_SELECTED contains space-delimited indices, with surrounding spaces.
+  local mode="$1" focus="$2"
+  shift 2
+  local labels=("$@") key sequence index marker pointer
+  local count="${#labels[@]}" error=""
+  if [[ "$mode" == multiple ]]; then
+    printf 'Use Up/Down to move, Space to toggle, Enter to confirm. Esc cancels.\n'
+  else
+    printf 'Use Up/Down to move, Enter to confirm. Esc cancels.\n'
+  fi
+  while :; do
+    for ((index=0; index<count; index++)); do
+      pointer=' '
+      [[ "$index" != "$focus" ]] || pointer='>'
+      marker=''
+      if [[ "$mode" == multiple ]]; then
+        marker='[ ] '
+        case "$MENU_SELECTED" in *" $index "*) marker='[x] ' ;; esac
+      fi
+      printf '\r\033[2K%s %s%s\n' "$pointer" "$marker" "${labels[index]}"
+    done
+    printf '\r\033[2K%s' "$error"
+    key=''
+    if ! IFS= read -rsn1 key; then
+      printf '\n'
+      fail "no input on stdin. Pass --yes and flags, or use a terminal."
+    fi
+    case "$key" in
+      $'\033')
+        sequence=''
+        if ! IFS= read -rsn1 -t 1 sequence; then
+          printf '\n'
+          fail "aborted" 130
+        fi
+        if [[ "$sequence" == '[' || "$sequence" == O ]]; then
+          key=''
+          IFS= read -rsn1 -t 1 key || true
+          case "$key" in
+            A) focus=$(((focus + count - 1) % count)) ;;
+            B) focus=$(((focus + 1) % count)) ;;
+          esac
+        fi
+        ;;
+      ' ')
+        if [[ "$mode" == multiple ]]; then
+          case "$MENU_SELECTED" in
+            *" $focus "*) MENU_SELECTED="${MENU_SELECTED/ $focus / }" ;;
+            *) MENU_SELECTED="$MENU_SELECTED$focus " ;;
+          esac
+        fi
+        ;;
+      '')
+        if [[ "$mode" == single ]]; then
+          MENU_SELECTED=" $focus "
+          printf '\n'
+          return
+        fi
+        if [[ "$MENU_SELECTED" != ' ' ]]; then
+          printf '\n'
+          return
+        fi
+        error='Select at least one agent.'
+        ;;
+    esac
+    printf '\033[%dA' "$count"
+  done
+}
+
 prompt_yes_no() {
   # $1 = question, $2 = default (0 or 1). Returns 0 for yes, 1 for no.
   local question="$1" default="$2" hint="y/N"
+  if use_menu; then
+    printf '%s\n' "$question"
+    MENU_SELECTED=' '
+    prompt_menu single "$((1 - default))" Yes No
+    [[ "$MENU_SELECTED" == ' 0 ' ]]
+    return
+  fi
   if [[ "$default" == 1 ]]; then
     hint="Y/n"
   fi
@@ -210,6 +291,27 @@ prompt_agents() {
   local detected="$1" default_names="$1" default="" det="" name
   if [[ -z "$default_names" ]]; then
     default_names="cursor claude"
+  fi
+  if use_menu; then
+    printf 'Which coding agents does this repository use?\n'
+    local index=0
+    MENU_SELECTED=' '
+    for name in $AGENT_NAMES; do
+      case " $default_names " in
+        *" $name "*) MENU_SELECTED="$MENU_SELECTED$index " ;;
+      esac
+      index=$((index + 1))
+    done
+    prompt_menu multiple 0 Cursor 'Claude Code' 'GitHub Copilot' Codex
+    AGENTS_SELECTED=''
+    index=0
+    for name in $AGENT_NAMES; do
+      case "$MENU_SELECTED" in
+        *" $index "*) AGENTS_SELECTED="${AGENTS_SELECTED:+$AGENTS_SELECTED }$name" ;;
+      esac
+      index=$((index + 1))
+    done
+    return
   fi
   for name in $AGENT_NAMES; do
     case " $default_names " in
