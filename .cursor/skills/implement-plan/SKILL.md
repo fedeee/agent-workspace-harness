@@ -46,8 +46,9 @@ Update the plan file's frontmatter:
 status: in-progress
 ```
 
-Record the current `HEAD` commit. The auto review in step 7 diffs
-against it.
+On the first run, record the current `HEAD` commit as the review base.
+On resume, preserve the original base from `## Waves`. The auto review in step 7 diffs against it.
+If an in-progress plan has no valid base, ask for the original base before implementation or review.
 
 ### 4. Analyze Dependencies
 
@@ -72,7 +73,7 @@ anything.
    cannot spawn subagents (for example GitHub Copilot), every wave is
    `inline`.
 6. Write the table into the plan under `## Waves`. Replace an existing
-   table. Include the base commit.
+   table. Preserve the original base commit on resume.
 
    ```markdown
    ## Waves
@@ -173,14 +174,15 @@ minutes.
 After the suite is green, review the diff from the base commit recorded
 in `## Waves`:
 
-1. Run the review subagent your tool provides. In Cursor that is the
-   Bugbot subagent. In Claude Code or Codex, spawn a reviewer subagent with the
-   diff and the plan. If no review subagent exists, read the diff
-   yourself against the plan's steps.
-2. Fix a finding the review substantiates. Add each fix as a checked
-   step (see step 8). Drop a finding you can show is wrong, and say why
-   in the report.
-3. Re-run the tests the fix touches.
+1. Follow `.claude/skills/review-change/SKILL.md` with this plan as the scope.
+   Request one independent reviewer. It returns evidence and findings without edits.
+   If delegation is unavailable, explicitly label the result as self-review.
+2. Fix supported findings as the implementer. Add each fix as a checked step (see step 8).
+   Reject a finding only with evidence, and explain why in the report.
+3. Re-run the tests affected by each fix. Request one follow-up review of the fixes and affected behavior.
+   Do not repeat review cycles indefinitely. Report unresolved findings after that follow-up.
+4. Record the review scope, mode, findings, disposition, checks, and limitations under `## Review` in the plan.
+   If review fails or supported findings remain unresolved, keep the plan in progress and report the blocker.
 
 The human reviews after this. Commits stay local. Never push.
 
@@ -246,7 +248,7 @@ When all steps pass and tests are green:
    - Any fixes that were needed
    - Any decisions ledger entries added or reversed
    - Test results
-   - Suggested next step (e.g., "Ready for code review" or "Run `/commit` to commit")
+   - Suggested next step (for example, "Ready for human review")
 
 ## Error Handling
 

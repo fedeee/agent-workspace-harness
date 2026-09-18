@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 
 AGENT_NAMES="cursor claude copilot codex"
-CORE_SKILLS="create-plan implement-plan commit update-all-md-docs"
+CORE_SKILLS="create-plan implement-plan review-change"
 PLAN_FILES="_plans/README.md _plans/DECISIONS.md _plans/DECISIONS.example.md _plans/EXAMPLE.plan.md"
 EVAL_FILES="_eval/README.md _eval/GOLD.md _eval/GOLD.csv _eval/GOLD.example.md _eval/GOLD.example.csv _eval/BACKLOG.md _eval/BACKLOG.example.md _eval/CYCLE.md _eval/EXAMPLE.cycle.md"
 LOCAL_FILES="_local/README.md _local/eval.env.example"

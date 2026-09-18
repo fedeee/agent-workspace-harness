@@ -48,14 +48,13 @@ Core planning and memory need no database or MCP server.
 ## Skills and workflows
 
 Skills are reusable instructions that an agent follows inside your repository.
-The core installation includes four skills. Two optional skills add evaluation and database access.
+The core installation includes three skills. Two optional skills add evaluation and database access.
 
 | Skill                                                                | What it does                                                                        | Installation               |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------- |
 | [`create-plan`](.claude/skills/create-plan/SKILL.md)                 | Reads past decisions and writes a plan with code context, dependencies, and checks. | Core                       |
 | [`implement-plan`](.claude/skills/implement-plan/SKILL.md)           | Executes a plan, updates its checklist, tests changes, and reviews the result.      | Core                       |
-| [`commit`](.claude/skills/commit/SKILL.md)                           | Stages and commits changes locally. Never pushes.                                   | Core                       |
-| [`update-all-md-docs`](.claude/skills/update-all-md-docs/SKILL.md)   | Reviews Markdown files and updates stale documentation and references.              | Core                       |
+| [`review-change`](.claude/skills/review-change/SKILL.md)             | Independently reviews a change and returns evidence without edits. No plan required. | Core                     |
 | [`eval-loop`](.claude/skills/eval-loop/SKILL.md)                     | Tests one hypothesis and records evidence plus a keep or kill verdict.              | Optional: evaluations      |
 | [`mount-production-db`](.claude/skills/mount-production-db/SKILL.md) | Restores an S3 dump into a temporary local Postgres sidecar for read-only queries.  | Optional: database sidecar |
 
@@ -78,7 +77,31 @@ In Claude Code or Cursor, use `/create-plan` and `/implement-plan` with the same
 The implementation skill follows dependencies in the plan.
 Independent steps run as parallel workers in isolated Git worktrees.
 Dependent steps run in order. The agent combines changes, runs checks, and reviews the result.
-Use `$commit` or `/commit` when you want a local commit.
+Commits stay local. Never push.
+
+### Review an existing change
+
+In Codex, review staged, unstaged, and relevant untracked files with:
+
+```text
+$review-change
+```
+
+To review committed branch changes from their common ancestor with `main`, use:
+
+```text
+$review-change base main
+```
+
+You can also pass `commit <sha>` or an implementation plan path.
+Use `/review-change` in Claude Code or Cursor.
+In Copilot, select the reviewer agent or ask it to follow `.claude/skills/review-change/SKILL.md`.
+
+The skill starts a separate reviewer when the tool supports delegation.
+The reviewer inspects the diff, requirements, related code, and tests. It does not apply fixes.
+The report lists concrete defects, file references, evidence, and checks that could not run.
+If delegation is unavailable, the report explicitly identifies a self-review.
+No implementation plan is required. The implementation skill also uses this review before completion.
 
 ### How the components connect
 
@@ -99,15 +122,15 @@ flowchart TD
     workers --> merge["Merge"]
     merge --> checks["Checks"]
     serial --> checks
-    checks --> result["Review + commit"]
+    checks --> review["review-change"]
     checks --> memory
 
     classDef durable fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
     classDef human fill:#fff7ed,stroke:#ea580c,color:#7c2d12
     classDef workflow fill:#f0fdf4,stroke:#16a34a,color:#14532d
     class memory,spec,evidence durable
-    class request,result human
-    class plan,implement,parallel,workers,serial,merge,eval,checks workflow
+    class request human
+    class plan,implement,parallel,workers,serial,merge,eval,checks,review workflow
 ```
 
 Plans, evidence, and the decisions ledger remain available to future sessions.

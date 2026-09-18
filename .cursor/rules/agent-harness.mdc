@@ -28,10 +28,9 @@ Workspace skills live in `.claude/skills/` and are mirrored under
 Harness skills:
 
 - `/create-plan` / `/implement-plan` — spec-first execution
+- `/review-change` — independently review a change without edits
 - `/eval-loop` — one observe → hypothesize → test → keep/kill cycle
 - `/mount-production-db` — production dump → throwaway sidecar Postgres
-- `/commit` — stage and commit this repo. Never push.
-- `/update-all-md-docs` — refresh markdown so links stay accurate
 
 ## Git
 

@@ -48,6 +48,7 @@ Cleanup does not delete the branch. Scope the agent to the new path.
 
 - `/create-plan` — create a plan with steps, context, and pseudocode
 - `/implement-plan` — execute the plan, check off steps, run tests
+- `/review-change` — independently review a change without edits; a plan is optional
 - `/eval-loop` — one observe → hypothesize → test → keep/kill cycle
 - `/mount-production-db` — restore a dump onto a throwaway sidecar Postgres
 
@@ -127,7 +128,7 @@ Keep Claude Code, Cursor, GitHub Copilot, and Codex in sync:
 | Instructions | `CLAUDE.md`              | `AGENTS.md`                | `.github/copilot-instructions.md` |
 
 Codex uses `AGENTS.md`, `.agents/skills/`, `.codex/config.toml`, and `.codex/hooks.json`.
-Use `$create-plan` and `$implement-plan` in Codex. The skill steps are shared.
+Use `$create-plan`, `$implement-plan`, and `$review-change` in Codex. The skill steps are shared.
 Read linked prompt snippets explicitly; Claude `@` imports do not apply in Codex.
 
 1. Any MCP server added to `.mcp.json` must also go in `.vscode/mcp.json`

@@ -51,6 +51,18 @@ class HarnessTests(unittest.TestCase):
         self.assertTrue((self.repo / '.agents/skills/mount-production-db/scripts/mount.sh').is_file())
         self.assertNotIn('context7', (self.repo / '.codex/config.toml').read_text())
 
+    def test_core_review_installed_for_all_agents(self):
+        self.adopt('--agents', 'claude,cursor,codex,copilot', '--no-mcp', '--no-hooks')
+        source = ROOT / '.claude/skills/review-change/SKILL.md'
+        for folder in ('.claude/skills', '.cursor/skills', '.agents/skills'):
+            self.assertEqual(source.read_bytes(), (self.repo / folder / 'review-change/SKILL.md').read_bytes())
+        for relative in ('.claude/prompt-snippets/review-standards.md',
+                         '.claude/agents/reviewer.md', '.github/agents/reviewer.md'):
+            self.assertEqual((ROOT / relative).read_bytes(), (self.repo / relative).read_bytes())
+        for folder in ('.claude/skills', '.cursor/skills', '.agents/skills'):
+            self.assertFalse((self.repo / folder / 'commit').exists())
+            self.assertFalse((self.repo / folder / 'update-all-md-docs').exists())
+
     def test_codex_dry_run(self):
         self.adopt('--agents', 'codex', '--mcp', '--hooks', '--eval', '--dry-run')
         self.assertEqual([p.name for p in self.repo.iterdir()], ['.git'])
@@ -251,6 +263,9 @@ class HarnessTests(unittest.TestCase):
             for path in source.rglob('*'):
                 if path.is_file() and '__pycache__' not in path.parts:
                     self.assertEqual(path.read_bytes(), (mirror / path.relative_to(source)).read_bytes())
+        for folder in ('.claude/skills', '.cursor/skills', '.agents/skills'):
+            self.assertFalse((ROOT / folder / 'commit').exists())
+            self.assertFalse((ROOT / folder / 'update-all-md-docs').exists())
 
 
 if __name__ == '__main__':
