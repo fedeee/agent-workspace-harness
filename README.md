@@ -29,9 +29,7 @@ The harness keeps three records in the repository:
 - **Evaluations** in `_eval/`: hypotheses, measured results, and keep or kill verdicts.
 
 Each ledger entry is a **negative architecture decision record (ADR)**: an approach that evidence ruled out.
-This is entry D58 from PreGTM.
-PreGTM wrote D58 before the template added the **Scope** and **Reconsider when** fields.
-This example adds those two fields to show a complete entry:
+An example below:
 
 ```markdown
 ### D58 — A strict Tier B proof floor destroys recall
@@ -256,6 +254,28 @@ No. Each entry has a **Scope** and a **Reconsider when** condition.
 The entry applies only inside its scope.
 When new evidence meets the condition, a plan can reopen the entry.
 A reversed entry keeps its earlier evidence and states the current decision.
+
+## Future enhancements
+
+### MCP memory infrastructure
+
+Today, the ledger is a Markdown file in the repository. This works well during early development.
+Complex workflows with many agents need structured retrieval.
+We plan to move the ledger into a database behind an MCP server.
+
+- Agents will query the relevant negative decisions. They will not read a large text file.
+- Agents will use fewer tokens, and more context will stay available for the task.
+- The ledger will become a shared memory service. It will follow the developer across IDEs and agent tools.
+
+### Orchestration
+
+Today, you start each skill manually at each step.
+We plan to add an orchestrator that runs locally or in the cloud.
+The orchestrator will manage the full cycle: plan, implement, and evaluate.
+
+- It will assign domain-specific worker agents to specific skills.
+- It will evaluate the output of each worker.
+- It will run feedback loops that correct errors without human action.
 
 ---
 
