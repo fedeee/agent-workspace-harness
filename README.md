@@ -1,19 +1,131 @@
 # Agent Workspace Harness
 
-A harness for coding agents that preserves memory and gives structure to development workflows across **Codex, Claude Code, Cursor, and GitHub Copilot**. This harness consists of instructions, skills, and small scripts inside one Git repository.
+Agent sessions forget. Your repository does not.
+The harness stores what already failed in Git, where **Claude Code, Codex, Cursor, and GitHub Copilot** all read it.
+Install it into any existing repository with one command.
 
-## Memory persistence
+[Install](#installation-and-prerequisites) · [How agents share memory](#one-ledger-for-every-agent) · [Skills](#skills-and-workflows) · [Use case: PreGTM](_eval/examples/README.md)
 
-Agent sessions resets, while you can manually updated the coding harness memory, plan, decisions, and test results stay in your repository.
+## The problem
 
-This harness automatically updates the repo's memory across different coding harnesses so that the next session or team mate can continue from that record.
+Coding agents lose their context at the end of each session.
+The next session, another tool, or a teammate starts with no record of failed approaches.
+The agent then proposes an approach that an earlier session already tested and rejected.
+You must remember the failure and explain it again.
 
-It combines three components:
+This problem is worst when the product itself uses AI.
+A change to a classifier or an LLM pipeline can pass its tests and still make results worse.
+Only a measurement shows the failure. That evidence must survive the session.
 
-- **Plans** in `_plans/`: define the work, dependencies, and checks before code changes.
-- **Memory** in `_plans/DECISIONS.md`: record rejected approaches, evidence, and conditions for reconsideration.
-- **Evaluations** in `_eval/`: measure whether a change improves classifier quality, reduces error rates, or resolves pipeline failures.
-- **Optional Postgres MCP** lets agents query a temporary production database copy through a read-only connection.
+`AGENTS.md` and `CLAUDE.md` tell the agent how to work.
+The decisions ledger tells the agent what already failed, why, and when to test it again.
+
+## The decisions ledger
+
+The harness keeps three records in the repository:
+
+- **Decisions ledger** in `_plans/DECISIONS.md`: rejected approaches, evidence, and conditions for reconsideration.
+- **Plans** in `_plans/`: the work, dependencies, checks, and progress.
+- **Evaluations** in `_eval/`: hypotheses, measured results, and keep or kill verdicts.
+
+Each ledger entry is a **negative architecture decision record (ADR)**: an approach that evidence ruled out.
+This is entry D58 from PreGTM.
+PreGTM wrote D58 before the template added the **Scope** and **Reconsider when** fields.
+This example adds those two fields to show a complete entry:
+
+```markdown
+### D58 — A strict Tier B proof floor destroys recall
+
+- **Status**: settled 2026-08-19
+- **Was**: Add a second verifier after classification. Keep only accounts
+  that prove every minimum Tier B requirement with exact page quotes.
+- **Why**: Cycle 003 tested 50 frozen qualified rows across campaigns 6
+  and 12. The verifier kept five rows. Combined precision leak fell from
+  0.20 to 0.00, but recall leak rose from 0.04 to 0.39. Campaign 6 kept
+  no rows. Many true accounts do not publish every required fact on their
+  sites. A missing fact is not proof that the account fails the ICP.
+  Narrow criterion tests remain valid. Do not use a strict all-criteria
+  second pass or treat `unknown` as excluded.
+- **Scope**: This verifier, on 50 frozen qualified rows from campaigns 6
+  and 12. The crawler fetched live websites for the test.
+- **Reconsider when**: A narrower check tests one criterion and does not
+  exclude accounts with missing evidence.
+```
+
+## One ledger for every agent
+
+Each agent tool reads its own instruction file.
+In the harness, every instruction file points to the same ledger.
+The same skills are copied into the skill folder of each tool.
+
+| Agent tool     | Instruction file                  | Skills                     |
+| -------------- | --------------------------------- | -------------------------- |
+| Claude Code    | `CLAUDE.md`                       | `.claude/skills/`          |
+| Codex          | `AGENTS.md`                       | `.agents/skills/`          |
+| Cursor         | `.cursor/rules/agent-harness.mdc` | `.cursor/skills/`          |
+| GitHub Copilot | `.github/copilot-instructions.md` | `.github/agents/` (review) |
+
+### How agents use the ledger
+
+1. **Read.** Before it designs, `create-plan` reads the ledger index. The index groups entries by subsystem.
+   The skill then reads only the entries for the subsystems that the work touches.
+2. **Cite.** If the plan touches an entry, the plan cites its ID.
+   The plan either respects the decision or states the new evidence that overturns it.
+3. **Write.** When implementation or evaluation rules out an approach, the agent appends an entry.
+   The entry must have scope, evidence, and a reconsideration condition.
+   An approach without evidence stays **open**, not **settled**.
+4. **Review.** The agent commits the entry locally. You review it in the diff before you push.
+
+## The workflow
+
+The core loop needs no database and no MCP server.
+
+```mermaid
+flowchart LR
+    ledger["Decisions ledger"] -->|Read before design| plan["Plan"]
+    plan --> implement["Implement and test"]
+    implement --> review["Agent review, then human review"]
+    implement -->|Record rejected approaches| ledger
+```
+
+It adds a measured keep or kill verdict for one hypothesis.
+
+```mermaid
+flowchart LR
+    hypothesis["Hypothesis and baseline"] --> evaluate["Evaluate"]
+    mcp["Postgres MCP: local production database copy"] -.->|Read-only| evaluate
+    evaluate -->|Keep| plan["Plan"]
+    evaluate -->|Kill| ledger["Decisions ledger"]
+```
+
+Tests check expected behavior. Evaluations measure results. The ledger keeps the evidence.
+A keep verdict supports implementation and review. It does not merge or release a change.
+You start each workflow, and you are responsible for the final review and release.
+
+## Evaluate one hypothesis at a time
+
+1. Set a baseline and a fixed sample.
+2. State one change and the expected result before the test.
+3. Run the test and compare the result with the target.
+4. Record a keep or kill verdict. A kill verdict goes into the ledger.
+
+**Use case: PreGTM.** A B2B lead pipeline used this loop on its website crawler.
+A retry fix recovered 0 of 32 blocked requests. The ledger recorded that failure, and the next plan did not repeat it.
+The measured alternative reduced blocked requests from 32 of 60 to 0.
+Read the [PreGTM use case](_eval/examples/README.md), with the original evaluation records.
+
+## Skills and workflows
+
+A skill is a set of instructions that an agent follows inside your repository.
+The core installation includes three skills. Two optional skills add evaluation and database access.
+
+| Skill                                                                | What it does                                                                         | Installation     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------- |
+| [`create-plan`](.claude/skills/create-plan/SKILL.md)                 | Reads past decisions and writes a plan with code context, dependencies, and checks.  | Core             |
+| [`implement-plan`](.claude/skills/implement-plan/SKILL.md)           | Executes a plan, updates its checklist, tests changes, and reviews the result.       | Core             |
+| [`review-change`](.claude/skills/review-change/SKILL.md)             | Independently reviews a change and returns evidence without edits. No plan required. | Core             |
+| [`eval-loop`](.claude/skills/eval-loop/SKILL.md)                     | Tests one hypothesis and records evidence plus a keep or kill verdict.               | Evaluations      |
+| [`mount-production-db`](.claude/skills/mount-production-db/SKILL.md) | Restores an S3 dump into a local Postgres sidecar and mounts it as a read-only MCP.  | Database sidecar |
 
 ## Installation and prerequisites
 
@@ -23,16 +135,17 @@ Run this command from the root of your app repository:
 curl -fsSL https://raw.githubusercontent.com/fedeee/agent-workspace-harness/main/install.sh | bash
 ```
 
-It copies the selected skills and rules. It preserves the decisions ledger and app README.
+The installer asks which agent tools you use and copies the matching skills and rules.
+It keeps your decisions ledger and your app README.
 For existing `CLAUDE.md` and `AGENTS.md` files, it appends a harness section.
-Existing MCP server entries and hook settings take precedence during merges.
+During merges, your existing MCP server entries and hook settings take precedence.
 
 ### Prerequisites
 
 For the core harness, you need **Bash**, **Git**, an existing Git repository, and one supported coding agent.
 The one-line installer also needs **curl**.
 
-Optional features need additional tools:
+For evaluation the following features are also needed:
 
 | Feature                                    | Prerequisites                                                     |
 | ------------------------------------------ | ----------------------------------------------------------------- |
@@ -45,18 +158,7 @@ Optional features need additional tools:
 Set `HARNESS_PYTHON=/path/to/python3.11` if Codex MCP configuration needs a newer Python than your default.
 Core planning and memory need no database or MCP server.
 
-## Skills and workflows
-
-Skills are reusable instructions that an agent follows inside your repository.
-The core installation includes three skills. Two optional skills add evaluation and database access.
-
-| Skill                                                                | What it does                                                                        | Installation               |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------- |
-| [`create-plan`](.claude/skills/create-plan/SKILL.md)                 | Reads past decisions and writes a plan with code context, dependencies, and checks. | Core                       |
-| [`implement-plan`](.claude/skills/implement-plan/SKILL.md)           | Executes a plan, updates its checklist, tests changes, and reviews the result.      | Core                       |
-| [`review-change`](.claude/skills/review-change/SKILL.md)             | Independently reviews a change and returns evidence without edits. No plan required. | Core                     |
-| [`eval-loop`](.claude/skills/eval-loop/SKILL.md)                     | Tests one hypothesis and records evidence plus a keep or kill verdict.              | Optional: evaluations      |
-| [`mount-production-db`](.claude/skills/mount-production-db/SKILL.md) | Restores an S3 dump into a temporary local Postgres sidecar for read-only queries.  | Optional: database sidecar |
+## Run the workflows
 
 ### Plan and implement a change
 
@@ -77,7 +179,7 @@ In Claude Code or Cursor, use `/create-plan` and `/implement-plan` with the same
 The implementation skill follows dependencies in the plan.
 Independent steps run as parallel workers in isolated Git worktrees.
 Dependent steps run in order. The agent combines changes, runs checks, and reviews the result.
-Commits stay local. Never push.
+The agent commits locally and never pushes. You push after your review.
 
 ### Review an existing change
 
@@ -100,46 +202,10 @@ In Copilot, select the reviewer agent or ask it to follow `.claude/skills/review
 The skill starts a separate reviewer when the tool supports delegation.
 The reviewer inspects the diff, requirements, related code, and tests. It does not apply fixes.
 The report lists concrete defects, file references, evidence, and checks that could not run.
-If delegation is unavailable, the report explicitly identifies a self-review.
+If delegation is unavailable, the report identifies the review as a self-review.
 No implementation plan is required. The implementation skill also uses this review before completion.
 
-### How the components connect
-
-```mermaid
-flowchart TD
-    request["Request"] --> plan["create-plan"]
-    rules["Instructions"] -.-> plan
-    memory["Decisions"] --> plan
-    plan --> spec["Plan"]
-    spec --> implement["implement-plan"]
-    inputs["Eval inputs"] --> eval["eval-loop"]
-    eval --> evidence["Verdict"]
-    evidence -->|Keep| implement
-    evidence -->|Kill| memory
-    implement --> parallel{"Parallelizable?"}
-    parallel -->|Yes| workers["Worktree workers"]
-    parallel -->|No| serial["Sequential steps"]
-    workers --> merge["Merge"]
-    merge --> checks["Checks"]
-    serial --> checks
-    checks --> review["review-change"]
-    checks --> memory
-
-    classDef durable fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    classDef human fill:#fff7ed,stroke:#ea580c,color:#7c2d12
-    classDef workflow fill:#f0fdf4,stroke:#16a34a,color:#14532d
-    class memory,spec,evidence durable
-    class request human
-    class plan,implement,parallel,workers,serial,merge,eval,checks,review workflow
-```
-
-Plans, evidence, and the decisions ledger remain available to future sessions.
-The ledger holds **negative architecture decision records (ADRs)**: approaches that evidence ruled out.
-Each entry states its scope, evidence, and conditions for reconsideration.
-Plan creation reads this memory; implementation and evaluation add rejected approaches when evidence supports them.
-The template starts with an empty ledger. [Example entries](_plans/DECISIONS.example.md) show the format.
-
-### Evaluate a hypothesis
+### Run an evaluation
 
 Test classifier or pipeline changes against fixed inputs before implementation.
 
@@ -167,19 +233,29 @@ Postgres MCP connects the agent to this local sidecar as the read-only `eval_ro`
 The agent can inspect data and diagnose pipeline errors without changes to the source database.
 See the [evaluation guide](_eval/README.md) for metrics and the [database setup guide](_local/README.md) for configuration.
 
-## Who is this for?
+### Common questions
 
-This harness is for developers and teams who use coding agents across multiple sessions.
-It is useful when you need to:
+**Why not use the built-in memory of Claude Code or Cursor?**
+Built-in memory belongs to one tool and one user.
+A Claude Code memory is not available to Codex, to Cursor, or to a teammate.
+The ledger is plain Markdown in Git. Every agent tool reads it, and teammates receive it with a pull.
+You review each change to it in a diff, the same as code.
 
-- Resume complex changes with an explicit plan and progress record.
-- Use difference coding harnesses in the same repo
-- Preserve evidence about failed approaches so future sessions can avoid them.
-- Coordinate independent implementation steps in one repository.
-- Measure classifier or pipeline changes before you adopt them.
+**How does the agent find the relevant entries in a large ledger?**
+The ledger starts with an index that groups entry IDs by subsystem.
+`create-plan` reads the index first. Then it reads only the entries for the subsystems that the work touches.
+The agent does not read all entries for each plan.
 
-The repository stores the workflow state, and the agent follows it during each session.
-You remain responsible for review and release. The harness does not run a separate background scheduler or deployment platform.
+**Does the agent write entries without approval?**
+Yes, but the entry is not final until you review it.
+The agent commits locally and never pushes. You see each new entry in the diff before you push.
+You can edit or delete an entry, the same as a line of code.
+
+**Can a wrong kill verdict block a good idea permanently?**
+No. Each entry has a **Scope** and a **Reconsider when** condition.
+The entry applies only inside its scope.
+When new evidence meets the condition, a plan can reopen the entry.
+A reversed entry keeps its earlier evidence and states the current decision.
 
 ---
 
